@@ -1,0 +1,82 @@
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Interceptor pour ajouter le token JWT
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export const authAPI = {
+  register: (data) => api.post('/auth/register', data),
+  login: (data) => api.post('/auth/login', data),
+  getProfile: () => api.get('/auth/profile')
+};
+
+export const productAPI = {
+  getAll: (params) => api.get('/products', { params }),
+  getById: (id) => api.get(`/products/${id}`),
+  create: (data) => api.post('/products', data),
+  update: (id, data) => api.put(`/products/${id}`, data),
+  delete: (id) => api.delete(`/products/${id}`)
+};
+
+export const orderAPI = {
+  create: (data) => api.post('/orders', data),
+  getUserOrders: () => api.get('/orders'),
+  getById: (id) => api.get(`/orders/${id}`),
+  processPayment: (data) => api.post('/orders/payment', data)
+};
+
+export const reviewAPI = {
+  create: (data) => api.post('/reviews', data),
+  getProductReviews: (productId) => api.get(`/reviews/product/${productId}`)
+};
+
+export const userAPI = {
+  updateProfile: (data) => api.put('/users/profile', data),
+  getPoints: () => api.get('/users/points')
+};
+
+export const adminAPI = {
+  getDashboardStats: () => api.get('/admin/dashboard'),
+  getAllClients: () => api.get('/admin/clients'),
+  getAllOrders: () => api.get('/admin/orders'),
+  updateOrderStatus: (id, data) => api.put(`/admin/orders/${id}/status`, data),
+  createPromotion: (data) => api.post('/admin/promotions', data),
+  getAllPromotions: () => api.get('/admin/promotions'),
+  updatePromotion: (id, data) => api.put(`/admin/promotions/${id}`, data),
+  deletePromotion: (id) => api.delete(`/admin/promotions/${id}`),
+  exportPDF: () => api.get('/admin/export/pdf', { responseType: 'blob' }),
+  exportCSV: () => api.get('/admin/export/csv', { responseType: 'blob' })
+};
+
+export const chatbotAPI = {
+  chat: (data) => api.post('/chatbot/chat', data)
+};
+
+export const promotionAPI = {
+  validate: (data) => api.post('/promotions/validate', data)
+};
+
+export const paymentAPI = {
+  initiateSwitch: (data) => api.post('/payment/switch', data)
+};
+
+export default api;
