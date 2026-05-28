@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#61f4c4;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#4facfe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f9d423;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#61f4c4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4facfe;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="90" fill="url(#logoGradient)" opacity="0.1"/>
+  
+  <!-- Sport Icon - Running Shoe -->
+  <g transform="translate(50, 50) scale(0.5)">
+    <!-- Shoe Sole -->
+    <path d="M20 120 L180 120 L170 140 L30 140 Z" fill="#07111f" opacity="0.8"/>
+    
+    <!-- Shoe Body -->
+    <path d="M30 120 Q20 80 50 60 L100 40 L150 60 Q180 80 170 120 Z" fill="url(#iconGradient)"/>
+    
+    <!-- Shoe Details -->
+    <path d="M50 60 L100 40 L150 60" stroke="#ffffff" stroke-width="3" fill="none" opacity="0.3"/>
+    <circle cx="60" cy="90" r="8" fill="#ffffff" opacity="0.2"/>
+    <circle cx="140" cy="90" r="8" fill="#ffffff" opacity="0.2"/>
+    
+    <!-- Motion Lines -->
+    <line x1="10" y1="100" x2="30" y2="100" stroke="#61f4c4" stroke-width="4" stroke-linecap="round"/>
+    <line x1="5" y1="110" x2="25" y2="110" stroke="#4facfe" stroke-width="3" stroke-linecap="round"/>
+    <line x1="15" y1="120" x2="35" y2="120" stroke="#f9d423" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="100" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="24" fill="url(#logoGradient)">
+    SPORT
+  </text>
+  <text x="100" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="16" fill="#ffffff" opacity="0.9">
+    EQUIP
+  </text>
+</svg>

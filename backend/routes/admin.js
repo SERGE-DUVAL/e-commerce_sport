@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { 
   getDashboardStats, 
-  getAllClients, 
+  getAllClients,
+  deleteClient, 
   getAllOrders, 
   updateOrderStatus,
   createPromotion,
@@ -16,6 +17,7 @@ const { protect, admin } = require('../middleware/auth');
 
 router.get('/dashboard', protect, admin, getDashboardStats);
 router.get('/clients', protect, admin, getAllClients);
+router.delete('/clients/:id', protect, admin, deleteClient);
 router.get('/orders', protect, admin, getAllOrders);
 router.put('/orders/:id/status', protect, admin, updateOrderStatus);
 router.post('/promotions', protect, admin, createPromotion);
@@ -26,3 +28,5 @@ router.get('/export/pdf', protect, admin, exportPDF);
 router.get('/export/csv', protect, admin, exportCSV);
 
 module.exports = router;
+
+

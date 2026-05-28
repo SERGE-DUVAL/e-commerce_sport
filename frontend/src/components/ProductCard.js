@@ -23,10 +23,10 @@ const ProductCard = ({ product }) => {
           variant="top" 
           src={getProductImage(product)}
           alt={product.titre}
-          style={{ height: '220px', objectFit: 'cover' }}
+          style={{ height: '250px', objectFit: 'cover' }}
         />
         <Card.Body>
-          <Card.Title className="text-truncate">{product.titre}</Card.Title>
+          <Card.Title className="product-title">{product.titre}</Card.Title>
           <Card.Text className="text-muted small">{product.categorie}</Card.Text>
           <Card.Text className="fw-bold text-primary">
             {formatPrice(product.prix_xaf)} FCFA

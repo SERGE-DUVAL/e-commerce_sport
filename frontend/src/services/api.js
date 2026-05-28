@@ -34,19 +34,29 @@ export const productAPI = {
   getById: (id) => api.get(`/products/${id}`),
   create: (data) => api.post('/products', data),
   update: (id, data) => api.put(`/products/${id}`, data),
-  delete: (id) => api.delete(`/products/${id}`)
+  delete: (id) => api.delete(`/products/${id}`),
+  assignToZone: (data) => api.post('/products/assign-zone', data),
+  getZones: (id) => api.get(`/products/${id}/zones`),
+  removeFromZone: (data) => api.post('/products/remove-zone', data)
 };
 
 export const orderAPI = {
   create: (data) => api.post('/orders', data),
   getUserOrders: () => api.get('/orders'),
   getById: (id) => api.get(`/orders/${id}`),
-  processPayment: (data) => api.post('/orders/payment', data)
+  processPayment: (data) => api.post('/orders/payment', data),
+  generateCashReceipt: (id) => {
+    return {
+      url: `/api/orders/${id}/ticket`,
+      method: 'GET'
+    };
+  }
 };
 
 export const reviewAPI = {
   create: (data) => api.post('/reviews', data),
-  getProductReviews: (productId) => api.get(`/reviews/product/${productId}`)
+  getProductReviews: (productId) => api.get(`/reviews/product/${productId}`),
+  getDeliveryReviews: () => api.get('/reviews/delivery')
 };
 
 export const userAPI = {
@@ -57,6 +67,8 @@ export const userAPI = {
 export const adminAPI = {
   getDashboardStats: () => api.get('/admin/dashboard'),
   getAllClients: () => api.get('/admin/clients'),
+  deleteClient: (id) => api.delete(`/admin/clients/${id}`),
+  getUserOrders: (id) => api.get(`/admin/clients/${id}/orders`),
   getAllOrders: () => api.get('/admin/orders'),
   updateOrderStatus: (id, data) => api.put(`/admin/orders/${id}/status`, data),
   createPromotion: (data) => api.post('/admin/promotions', data),
@@ -79,4 +91,13 @@ export const paymentAPI = {
   initiateSwitch: (data) => api.post('/payment/switch', data)
 };
 
+export const stockAPI = {
+  createMouvement: (data) => api.post('/stock/mouvements', data),
+  getMouvements: (params) => api.get('/stock/mouvements', { params }),
+  getStockAlerts: () => api.get('/stock/alerts'),
+  getStockForecast: () => api.get('/stock/forecast')
+};
+
 export default api;
+
+

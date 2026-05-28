@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Button, Form, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Alert, ProgressBar, Modal, Table } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { orderAPI, promotionAPI, userAPI } from '../services/api';
 import { getProductImage } from '../utils/productImages';
+import { QRCodeCanvas } from 'qrcode.react';
 
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity, clearCart, getCartTotal } = useCart();
@@ -18,14 +19,19 @@ const Cart = () => {
   const [userPoints, setUserPoints] = useState(0);
   const [adresseLivraison, setAdresseLivraison] = useState('');
   const [moyenPaiement, setMoyenPaiement] = useState('Mobile Money');
+  const [codeMarchand, setCodeMarchand] = useState('');
+  const [paymentStep, setPaymentStep] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [recentCategories, setRecentCategories] = useState([]);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [orderData, setOrderData] = useState(null);
 
   // Charger les points de l'utilisateur
   React.useEffect(() => {
     if (user) {
       loadUserPoints();
+      loadRecentRecommendations();
       setAdresseLivraison(user.adresse_livraison || '');
     }
   }, [user]);
@@ -36,6 +42,19 @@ const Cart = () => {
       setUserPoints(response.data.points_fidelite);
     } catch (error) {
       console.error('Erreur chargement points:', error);
+    }
+  };
+
+  const loadRecentRecommendations = async () => {
+    try {
+      const response = await orderAPI.getUserOrders();
+      const categories = response.data
+        .flatMap(order => order.LigneCommandes || [])
+        .map(line => line.Produit?.categorie)
+        .filter(Boolean);
+      setRecentCategories([...new Set(categories)].slice(0, 3));
+    } catch (error) {
+      setRecentCategories([]);
     }
   };
 
@@ -85,6 +104,11 @@ const Cart = () => {
       return;
     }
 
+    if (moyenPaiement === 'Mobile Money' && codeMarchand.trim().length < 4) {
+      setError('Veuillez saisir un code marchand fictif valide');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -104,16 +128,22 @@ const Cart = () => {
         code_promo: codePromo || undefined
       });
 
-      // Simuler le paiement
+      if (moyenPaiement === 'Mobile Money') {
+        setPaymentStep('Connexion au service Mobile Money...');
+        await new Promise(resolve => setTimeout(resolve, 800));
+        setPaymentStep('Vérification du code marchand...');
+        await new Promise(resolve => setTimeout(resolve, 800));
+        setPaymentStep('Validation du paiement sécurisé...');
+        await new Promise(resolve => setTimeout(resolve, 900));
+      }
+
       await orderAPI.processPayment({
         id_commande: response.data.commande.id_commande
       });
 
-      setSuccess(true);
+      setOrderData(response.data.commande);
+      setShowTicketModal(true);
       clearCart();
-      setTimeout(() => {
-        navigate('/profil');
-      }, 3000);
     } catch (error) {
       setError(error.response?.data?.message || 'Erreur lors de la commande');
     } finally {
@@ -125,16 +155,10 @@ const Cart = () => {
     return price.toLocaleString('fr-FR');
   };
 
-  if (success) {
-    return (
-      <Container className="py-5">
-        <Alert variant="success">
-          <h4>Commande validée avec succès !</h4>
-          <p>Vous allez être redirigé vers votre profil...</p>
-        </Alert>
-      </Container>
-    );
-  }
+  const handleCloseTicketModal = () => {
+    setShowTicketModal(false);
+    navigate('/profil');
+  };
 
   return (
     <Container className="py-4">
@@ -285,9 +309,45 @@ const Cart = () => {
                   <Form.Label>Moyen de paiement:</Form.Label>
                   <Form.Select value={moyenPaiement} onChange={(e) => setMoyenPaiement(e.target.value)}>
                     <option value="Mobile Money">Mobile Money (Orange/MTN)</option>
+                    <option value="Carte bancaire">Carte bancaire</option>
+                    <option value="PayPal">PayPal</option>
+                    <option value="Chèque">Chèque</option>
                     <option value="Cash">Paiement à la livraison</option>
+                    <option value="Points">Points de fidélité</option>
                   </Form.Select>
                 </Form.Group>
+
+                {moyenPaiement === 'Mobile Money' && (
+                  <Form.Group className="mb-3 payment-simulator">
+                    <Form.Label>Code marchand fictif:</Form.Label>
+                    <Form.Control
+                      value={codeMarchand}
+                      onChange={(e) => setCodeMarchand(e.target.value)}
+                      placeholder="Ex: SE-MOMO-2026"
+                    />
+                    {paymentStep && (
+                      <div className="mt-3">
+                        <ProgressBar animated now={loading ? 75 : 100} />
+                        <small>{paymentStep}</small>
+                      </div>
+                    )}
+                  </Form.Group>
+                )}
+
+                <Card className="cart-recommendations mb-3">
+                  <Card.Body>
+                    <h6>Suggestions selon vos commandes</h6>
+                    <Row className="g-2">
+                      {(recentCategories.length > 0 ? recentCategories : ['Football', 'Running', 'Fitness']).map((category) => (
+                        <Col key={category} xs={4}>
+                          <Button variant="outline-primary" size="sm" className="w-100" onClick={() => navigate(`/catalogue?categorie=${category}`)}>
+                            {category}
+                          </Button>
+                        </Col>
+                      ))}
+                    </Row>
+                  </Card.Body>
+                </Card>
 
                 {error && <Alert variant="danger">{error}</Alert>}
 
@@ -305,6 +365,86 @@ const Cart = () => {
           </Col>
         </Row>
       )}
+      
+      <Modal show={showTicketModal} onHide={handleCloseTicketModal} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Ticket de Commande</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {orderData && (
+            <div className="ticket-container">
+              <div className="ticket-header text-center mb-4">
+                <h3>Sport-Equip</h3>
+                <p className="text-muted">Ticket de commande #{orderData.id_commande}</p>
+                <p className="text-muted">{new Date().toLocaleString('fr-FR')}</p>
+              </div>
+              
+              <div className="ticket-details mb-4">
+                <h5>Détails de la commande</h5>
+                <Table bordered size="sm">
+                  <thead>
+                    <tr>
+                      <th>Produit</th>
+                      <th>Quantité</th>
+                      <th>Prix unitaire</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orderData.LigneCommandes?.map((ligne) => (
+                      <tr key={ligne.id_ligne_commande}>
+                        <td>{ligne.Produit?.titre || '-'}</td>
+                        <td>{ligne.quantite}</td>
+                        <td>{formatPrice(ligne.prix_unitaire)} FCFA</td>
+                        <td>{formatPrice(ligne.quantite * ligne.prix_unitaire)} FCFA</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={3} className="text-end"><strong>Total:</strong></td>
+                      <td className="text-end"><strong>{formatPrice(orderData.total_xaf)} FCFA</strong></td>
+                    </tr>
+                  </tfoot>
+                </Table>
+              </div>
+              
+              <div className="ticket-info mb-4">
+                <h5>Informations de livraison</h5>
+                <p><strong>Adresse:</strong> {orderData.adresse_livraison}</p>
+                <p><strong>Moyen de paiement:</strong> {orderData.moyen_paiement}</p>
+                <p><strong>Statut:</strong> <span className="badge bg-success">{orderData.statut}</span></p>
+              </div>
+              
+              <div className="ticket-qr text-center">
+                <h5>QR Code de la commande</h5>
+                <div className="qr-code-container d-flex justify-content-center mb-3">
+                  <QRCodeCanvas 
+                    value={`CMD-${orderData.id_commande}-${orderData.total_xaf}`}
+                    size={200}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+                <p className="text-muted">Scannez ce QR code pour suivre votre commande</p>
+              </div>
+              
+              <div className="ticket-footer mt-4 text-center">
+                <p className="text-muted small">Merci de votre confiance !</p>
+                <p className="text-muted small">Politique de retour: 15 jours pour échange</p>
+              </div>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={handleCloseTicketModal}>
+            Fermer
+          </Button>
+          <Button variant="outline-primary" onClick={() => window.print()}>
+            Imprimer
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { productAPI, reviewAPI } from '../services/api';
 import StarRating from '../components/StarRating';
+import { getProductImage } from '../utils/productImages';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -105,9 +106,9 @@ const ProductDetail = () => {
         <Col md={6}>
           <Card>
             <Card.Img 
-              src={`https://via.placeholder.com/500x500?text=${encodeURIComponent(product.titre)}`}
+              src={getProductImage(product)}
               alt={product.titre}
-              style={{ height: '500px', objectFit: 'cover' }}
+              style={{ height: '450px', objectFit: 'contain' }}
             />
           </Card>
         </Col>

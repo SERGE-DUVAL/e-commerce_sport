@@ -19,6 +19,15 @@ const Avis = sequelize.define('Avis', {
   },
   commentaire: {
     type: Sequelize.TEXT
+  },
+  type_avis: {
+    type: Sequelize.ENUM('produit', 'livraison'),
+    allowNull: false,
+    defaultValue: 'produit'
+  },
+  id_commande: {
+    type: Sequelize.INTEGER,
+    allowNull: true
   }
 }, {
   tableName: 'avis',
