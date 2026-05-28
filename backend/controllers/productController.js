@@ -1,4 +1,4 @@
-const { Produit, Avis } = require('../models');
+const { Produit, Avis, CodeBarre, ZoneStockage, Utilisateur } = require('../models');
 const { Op } = require('sequelize');
 
 exports.getAllProducts = async (req, res) => {
@@ -47,14 +47,14 @@ exports.getProductById = async (req, res) => {
     const avis = await Avis.findAll({
       where: { id_produit: req.params.id },
       include: [{
-        model: require('../models').Utilisateur,
+        model: Utilisateur,
         attributes: ['nom']
       }]
     });
 
     // Calculer la moyenne des notes
-    const moyenneNote = avis.length > 0 
-      ? avis.reduce((sum, a) => sum + a.note, 0) / avis.length 
+    const moyenneNote = avis.length > 0
+      ? avis.reduce((sum, a) => sum + a.note, 0) / avis.length
       : 0;
 
     res.json({
@@ -71,6 +71,29 @@ exports.getProductById = async (req, res) => {
 exports.createProduct = async (req, res) => {
   try {
     const produit = await Produit.create(req.body);
+
+    // Générer automatiquement un code-barres EAN13 pour le produit
+    let code = '';
+    for (let i = 0; i < 12; i++) {
+      code += Math.floor(Math.random() * 10);
+    }
+
+    // Calculer le checksum
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+      const digit = parseInt(code[i]);
+      sum += i % 2 === 0 ? digit : digit * 3;
+    }
+    const checksum = (10 - (sum % 10)) % 10;
+    const ean13 = code + checksum;
+
+    // Créer le code-barres pour le produit
+    await CodeBarre.create({
+      id_produit: produit.id_produit,
+      code_barre: ean13,
+      type_code: 'EAN13'
+    });
+
     res.status(201).json(produit);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
@@ -95,13 +118,76 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
   try {
     const produit = await Produit.findByPk(req.params.id);
-    
+
     if (!produit) {
       return res.status(404).json({ message: 'Produit non trouvé' });
     }
 
     await produit.destroy();
     res.json({ message: 'Produit supprimé' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
+exports.assignProductToZone = async (req, res) => {
+  try {
+    const { id_produit, id_zone } = req.body;
+
+    const produit = await Produit.findByPk(id_produit);
+    if (!produit) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
+    }
+
+    const zone = await ZoneStockage.findByPk(id_zone);
+    if (!zone) {
+      return res.status(404).json({ message: 'Zone non trouvée' });
+    }
+
+    await produit.addZone(zone);
+
+    res.status(201).json({ message: 'Produit assigné à la zone avec succès' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
+exports.getProductZones = async (req, res) => {
+  try {
+    const produit = await Produit.findByPk(req.params.id, {
+      include: [{
+        model: ZoneStockage,
+        as: 'zones'
+      }]
+    });
+
+    if (!produit) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
+    }
+
+    res.json(produit.zones);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
+exports.removeProductFromZone = async (req, res) => {
+  try {
+    const { id_produit, id_zone } = req.body;
+
+    const produit = await Produit.findByPk(id_produit);
+    if (!produit) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
+    }
+
+    const zone = await ZoneStockage.findByPk(id_zone);
+    if (!zone) {
+      return res.status(404).json({ message: 'Zone non trouvée' });
+    }
+
+    await produit.removeZone(zone);
+
+    res.json({ message: 'Produit retiré de la zone avec succès' });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }

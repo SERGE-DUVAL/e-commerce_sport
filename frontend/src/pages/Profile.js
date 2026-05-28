@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Table, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Table, Alert, Modal, Spinner, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
-import { userAPI, orderAPI } from '../services/api';
+import { userAPI, orderAPI, reviewAPI } from '../services/api';
+import { deliveryAPI } from '../api/delivery';
+import { FaCheck, FaStar, FaUser, FaEdit, FaSignOutAlt, FaShoppingBag, FaDownload } from 'react-icons/fa';
 
 const Profile = () => {
   const { user, updateUser, logout } = useAuth();
   const [orders, setOrders] = useState([]);
+  const [affectations, setAffectations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -14,6 +17,13 @@ const Profile = () => {
   });
   const [message, setMessage] = useState('');
   const [points, setPoints] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [reviewForm, setReviewForm] = useState({
+    note: 5,
+    commentaire: '',
+    type_avis: 'produit'
+  });
 
   useEffect(() => {
     if (user) {
@@ -30,6 +40,8 @@ const Profile = () => {
     try {
       const response = await orderAPI.getUserOrders();
       setOrders(response.data);
+      const affectationsResponse = await deliveryAPI.getAffectations();
+      setAffectations(affectationsResponse.data);
     } catch (error) {
       console.error('Erreur chargement commandes:', error);
     } finally {
@@ -61,7 +73,78 @@ const Profile = () => {
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/';
+    window.location.reload();
+  };
+
+  const handleConfirmDelivery = async (orderId) => {
+    try {
+      await orderAPI.confirmReception(orderId);
+      loadOrders();
+      setMessage('Réception confirmée avec succès');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Erreur lors de la confirmation de réception');
+    }
+  };
+
+  const handleDownloadDeliveryNote = async (orderId) => {
+    try {
+      const affectation = affectations.find(a => a.id_commande === orderId);
+      if (affectation) {
+        await deliveryAPI.generateDeliveryNote(affectation.id_affectation);
+        setMessage('Bordereau de livraison téléchargé');
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (error) {
+      setMessage('Erreur lors du téléchargement du bordereau');
+    }
+  };
+
+  const handleDownloadReceipt = async (orderId) => {
+    try {
+      await orderAPI.generateCashReceipt(orderId);
+      setMessage('Ticket de caisse téléchargé');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage('Erreur lors du téléchargement du ticket');
+    }
+  };
+
+  const handleOpenReview = (order) => {
+    setSelectedOrder(order);
+    setReviewForm({ note: 5, commentaire: '', type_avis: 'produit' });
+    setShowReviewModal(true);
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    try {
+      if (reviewForm.type_avis === 'produit') {
+        // Pour chaque produit de la commande, ajouter un avis
+        for (const ligne of selectedOrder.LigneCommandes || []) {
+          await reviewAPI.create({
+            id_produit: ligne.id_produit,
+            note: reviewForm.note,
+            commentaire: reviewForm.commentaire,
+            type_avis: 'produit'
+          });
+        }
+      } else if (reviewForm.type_avis === 'livraison') {
+        // Avis sur la livraison
+        await reviewAPI.create({
+          id_commande: selectedOrder.id_commande,
+          note: reviewForm.note,
+          commentaire: reviewForm.commentaire,
+          type_avis: 'livraison'
+        });
+      }
+      setShowReviewModal(false);
+      setMessage('Avis ajouté avec succès');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de l\'avis:', error);
+      setMessage(error.response?.data?.message || 'Erreur lors de l\'ajout de l\'avis');
+    }
   };
 
   const formatPrice = (price) => {
@@ -79,25 +162,39 @@ const Profile = () => {
   }
 
   return (
-    <Container className="py-4">
-      <h1 className="mb-4">Mon Profil</h1>
+    <Container className="py-5 profile-page">
+      <div className="profile-header mb-5">
+        <h1 className="profile-title">Mon Profil</h1>
+        <p className="profile-subtitle">Gérez vos informations et suivez vos commandes</p>
+      </div>
 
-      {message && <Alert variant="success">{message}</Alert>}
+      {message && <Alert variant="success" className="profile-alert">{message}</Alert>}
 
       <Row>
-        <Col md={4}>
-          <Card className="mb-4">
+        <Col lg={4} md={5}>
+          <Card className="profile-card mb-4">
             <Card.Body>
-              <h4>Informations personnelles</h4>
+              <div className="profile-section-header">
+                <h4><FaUser /> Informations personnelles</h4>
+              </div>
               {!editing ? (
-                <>
-                  <p><strong>Nom:</strong> {user.nom}</p>
-                  <p><strong>Email:</strong> {user.email}</p>
-                  <p><strong>Adresse:</strong> {user.adresse_livraison || 'Non renseignée'}</p>
-                  <Button variant="primary" onClick={() => setEditing(true)}>
-                    Modifier
+                <div className="profile-info">
+                  <div className="info-item">
+                    <span className="info-label">Nom:</span>
+                    <span className="info-value">{user.nom}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Email:</span>
+                    <span className="info-value">{user.email}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Adresse:</span>
+                    <span className="info-value">{user.adresse_livraison || 'Non renseignée'}</span>
+                  </div>
+                  <Button variant="primary" className="profile-btn" onClick={() => setEditing(true)}>
+                    <FaEdit /> Modifier
                   </Button>
-                </>
+                </div>
               ) : (
                 <Form onSubmit={handleUpdateProfile}>
                   <Form.Group className="mb-3">
@@ -107,6 +204,7 @@ const Profile = () => {
                       value={formData.nom}
                       onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                       required
+                      className="profile-input"
                     />
                   </Form.Group>
                   <Form.Group className="mb-3">
@@ -116,12 +214,13 @@ const Profile = () => {
                       rows={3}
                       value={formData.adresse_livraison}
                       onChange={(e) => setFormData({ ...formData, adresse_livraison: e.target.value })}
+                      className="profile-input"
                     />
                   </Form.Group>
-                  <Button type="submit" variant="primary" className="me-2">
+                  <Button type="submit" variant="primary" className="profile-btn me-2">
                     Enregistrer
                   </Button>
-                  <Button variant="secondary" onClick={() => setEditing(false)}>
+                  <Button variant="outline-secondary" onClick={() => setEditing(false)}>
                     Annuler
                   </Button>
                 </Form>
@@ -129,62 +228,104 @@ const Profile = () => {
             </Card.Body>
           </Card>
 
-          <Card className="mb-4">
+          <Card className="profile-card mb-4">
             <Card.Body>
-              <h4>Points de fidélité</h4>
+              <div className="profile-section-header">
+                <h4><FaStar /> Points de fidélité</h4>
+              </div>
               {points ? (
-                <>
-                  <p className="display-4 text-primary">{points.points_fidelite}</p>
-                  <p className="text-muted">Valeur: {formatPrice(points.valeur_fcfa)} FCFA</p>
-                  <small className="text-muted">10 points = 1 FCFA de réduction</small>
-                </>
+                <div className="loyalty-points">
+                  <div className="points-display">
+                    <span className="points-number">{points.points_fidelite}</span>
+                    <span className="points-label">points</span>
+                  </div>
+                  <div className="points-value">
+                    <span className="value-label">Valeur:</span>
+                    <span className="value-amount">{formatPrice(points.valeur_fcfa)} FCFA</span>
+                  </div>
+                  <small className="points-info">10 points = 1 FCFA de réduction</small>
+                </div>
               ) : (
                 <p>Chargement...</p>
               )}
             </Card.Body>
           </Card>
 
-          <Card>
+          <Card className="profile-card">
             <Card.Body>
-              <Button variant="danger" className="w-100" onClick={handleLogout}>
-                Déconnexion
+              <Button variant="outline-danger" className="w-100 profile-btn" onClick={handleLogout}>
+                <FaSignOutAlt /> Déconnexion
               </Button>
             </Card.Body>
           </Card>
         </Col>
 
-        <Col md={8}>
-          <Card>
+        <Col lg={8} md={7}>
+          <Card className="profile-card">
             <Card.Body>
-              <h4>Mes Commandes</h4>
+              <div className="profile-section-header">
+                <h4><FaShoppingBag /> Mes Commandes</h4>
+              </div>
               {loading ? (
-                <p>Chargement...</p>
+                <div className="text-center py-4">
+                  <Spinner animation="border" variant="primary" />
+                  <p className="mt-2">Chargement de vos commandes...</p>
+                </div>
               ) : orders.length === 0 ? (
-                <p>Aucune commande</p>
+                <div className="empty-orders text-center py-5">
+                  <FaShoppingBag size={48} className="text-muted mb-3" />
+                  <p className="text-muted">Aucune commande pour le moment</p>
+                  <Button variant="primary" href="/catalogue">Découvrir nos produits</Button>
+                </div>
               ) : (
-                <Table responsive>
+                <Table responsive hover className="orders-table">
                   <thead>
                     <tr>
                       <th>Commande #</th>
                       <th>Date</th>
                       <th>Total</th>
                       <th>Statut</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {orders.map((order) => (
                       <tr key={order.id_commande}>
-                        <td>#{order.id_commande}</td>
+                        <td><strong>#{order.id_commande}</strong></td>
                         <td>{new Date(order.createdAt).toLocaleDateString('fr-FR')}</td>
-                        <td>{formatPrice(order.total_xaf)} FCFA</td>
+                        <td className="fw-bold">{formatPrice(order.total_xaf)} FCFA</td>
                         <td>
-                          <span className={`badge ${
-                            order.statut === 'Livrée' ? 'bg-success' :
-                            order.statut === 'Payée' ? 'bg-primary' :
-                            order.statut === 'Annulée' ? 'bg-danger' : 'bg-warning'
+                          <Badge className={`order-status ${
+                            order.statut === 'Livrée' ? 'status-delivered' :
+                            order.statut === 'Payée' ? 'status-paid' :
+                            order.statut === 'Annulée' ? 'status-cancelled' : 'status-pending'
                           }`}>
                             {order.statut}
-                          </span>
+                          </Badge>
+                        </td>
+                        <td>
+                          <div className="order-actions">
+                            {(order.statut === 'En livraison' || order.statut === 'Payée') && (
+                              <Button size="sm" variant="success" className="action-btn me-2" onClick={() => handleConfirmDelivery(order.id_commande)}>
+                                <FaCheck /> Confirmer
+                              </Button>
+                            )}
+                            {order.statut === 'Payée' && (
+                              <Button size="sm" variant="outline-secondary" className="action-btn me-2" onClick={() => handleDownloadReceipt(order.id_commande)}>
+                                <FaDownload /> Ticket
+                              </Button>
+                            )}
+                            {affectations.find(a => a.id_commande === order.id_commande) && (
+                              <Button size="sm" variant="outline-info" className="action-btn me-2" onClick={() => handleDownloadDeliveryNote(order.id_commande)}>
+                                <FaDownload /> Bordereau
+                              </Button>
+                            )}
+                            {order.statut === 'Livrée' && (
+                              <Button size="sm" variant="outline-primary" className="action-btn" onClick={() => handleOpenReview(order)}>
+                                <FaStar /> Avis
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -195,6 +336,35 @@ const Profile = () => {
           </Card>
         </Col>
       </Row>
+      <Modal show={showReviewModal} onHide={() => setShowReviewModal(false)}>
+        <Modal.Header closeButton><Modal.Title>Laisser un avis</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleSubmitReview}>
+            <Form.Group className="mb-3">
+              <Form.Label>Type d'avis</Form.Label>
+              <Form.Control as="select" value={reviewForm.type_avis} onChange={(e) => setReviewForm({ ...reviewForm, type_avis: e.target.value })}>
+                <option value="produit">Avis sur le produit</option>
+                <option value="livraison">Avis sur la livraison</option>
+              </Form.Control>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Note</Form.Label>
+              <Form.Control as="select" value={reviewForm.note} onChange={(e) => setReviewForm({ ...reviewForm, note: Number(e.target.value) })}>
+                <option value={5}>⭐⭐⭐⭐⭐ Excellent</option>
+                <option value={4}>⭐⭐⭐⭐ Très bon</option>
+                <option value={3}>⭐⭐⭐ Bon</option>
+                <option value={2}>⭐⭐ Moyen</option>
+                <option value={1}>⭐ Médiocre</option>
+              </Form.Control>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Commentaire</Form.Label>
+              <Form.Control as="textarea" rows={4} value={reviewForm.commentaire} onChange={(e) => setReviewForm({ ...reviewForm, commentaire: e.target.value })} required />
+            </Form.Group>
+            <Button type="submit" variant="primary">Envoyer l'avis</Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
     </Container>
   );
 };

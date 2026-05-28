@@ -28,10 +28,10 @@ const LigneCommande = sequelize.define('LigneCommande', {
   timestamps: true
 });
 
-LigneCommande.belongsTo(Commande, { foreignKey: 'id_commande' });
-Commande.hasMany(LigneCommande, { foreignKey: 'id_commande' });
+LigneCommande.belongsTo(Commande, { foreignKey: 'id_commande', as: 'commande' });
+Commande.hasMany(LigneCommande, { foreignKey: 'id_commande', as: 'LigneCommandes' });
 
-LigneCommande.belongsTo(Produit, { foreignKey: 'id_produit' });
-Produit.hasMany(LigneCommande, { foreignKey: 'id_produit' });
+LigneCommande.belongsTo(Produit, { foreignKey: 'id_produit', as: 'Produit' });
+Produit.hasMany(LigneCommande, { foreignKey: 'id_produit', as: 'LigneCommandes' });
 
 module.exports = LigneCommande;

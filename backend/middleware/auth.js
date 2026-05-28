@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const { Utilisateur } = require('../models');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'sport_equip_secret_key_2026';
+
 exports.protect = async (req, res, next) => {
   try {
     let token;
@@ -13,7 +15,7 @@ exports.protect = async (req, res, next) => {
       return res.status(401).json({ message: 'Non autorisé - Pas de token' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     
     const utilisateur = await Utilisateur.findByPk(decoded.id);
     

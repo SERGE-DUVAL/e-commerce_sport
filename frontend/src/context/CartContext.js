@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
@@ -11,16 +12,29 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
+  const { user } = useAuth();
+  const cartStorageKey = user?.id ? `cart_user_${user.id}` : 'cart_guest';
   const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem('cart');
+    const storedUser = localStorage.getItem('user');
+    const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+    const savedCart = localStorage.getItem(parsedUser?.id ? `cart_user_${parsedUser.id}` : 'cart_guest');
     return savedCart ? JSON.parse(savedCart) : [];
   });
+  const [cartAnimation, setCartAnimation] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
+    const savedCart = localStorage.getItem(cartStorageKey);
+    setCart(savedCart ? JSON.parse(savedCart) : []);
+  }, [cartStorageKey]);
+
+  useEffect(() => {
+    localStorage.setItem(cartStorageKey, JSON.stringify(cart));
+  }, [cart, cartStorageKey]);
 
   const addToCart = (product, quantity = 1, taille = null, couleur = null) => {
+    setCartAnimation(true);
+    setTimeout(() => setCartAnimation(false), 600);
+    
     setCart(prevCart => {
       const existingItem = prevCart.find(
         item => item.id_produit === product.id_produit && 
@@ -97,7 +111,8 @@ export const CartProvider = ({ children }) => {
         updateQuantity,
         clearCart,
         getCartTotal,
-        getCartCount
+        getCartCount,
+        cartAnimation
       }}
     >
       {children}

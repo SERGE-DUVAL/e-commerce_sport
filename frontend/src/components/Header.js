@@ -5,10 +5,11 @@ import { FaShoppingCart, FaUser, FaRobot, FaUserShield } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import Chatbot from './Chatbot';
+import logo from '../assets/logo.svg';
 
 const Header = () => {
   const { user, logout } = useAuth();
-  const { getCartCount } = useCart();
+  const { getCartCount, cartAnimation } = useCart();
   const navigate = useNavigate();
   const [showChatbot, setShowChatbot] = useState(false);
   const roleLabel = user ? (user.role === 'admin' ? 'Admin' : 'Client') : 'Visiteur';
@@ -22,8 +23,9 @@ const Header = () => {
     <>
       <Navbar expand="lg" sticky="top" className="navbar-pro">
         <Container>
-          <Navbar.Brand as={Link} to="/">
-            <span className="brand-mark">SE</span> Sport-Equip
+          <Navbar.Brand as={Link} to="/" className="d-flex align-items-center" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+            <img src={logo} alt="Sport Equip Logo" width="60" height="60" className="me-3" style={{ filter: 'drop-shadow(0 4px 8px rgba(97, 244, 196, 0.4))' }} />
+            <span style={{ background: 'linear-gradient(135deg, #61f4c4, #4facfe)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Sport-Equip</span>
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
@@ -38,7 +40,7 @@ const Header = () => {
               <span className={`role-pill role-${roleLabel.toLowerCase()}`}>
                 <FaUserShield /> {roleLabel}
               </span>
-              <Nav.Link as={Link} to="/panier">
+              <Nav.Link as={Link} to="/panier" className={cartAnimation ? 'cart-animate' : ''}>
                 <FaShoppingCart /> Panier
                 {getCartCount() > 0 && (
                   <Badge bg="danger" className="ms-1">{getCartCount()}</Badge>
