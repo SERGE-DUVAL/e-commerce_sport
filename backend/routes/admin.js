@@ -3,7 +3,8 @@ const router = express.Router();
 const { 
   getDashboardStats, 
   getAllClients,
-  deleteClient, 
+  deleteClient,
+  getUserOrders,
   getAllOrders, 
   updateOrderStatus,
   createPromotion,
@@ -18,6 +19,7 @@ const { protect, admin } = require('../middleware/auth');
 router.get('/dashboard', protect, admin, getDashboardStats);
 router.get('/clients', protect, admin, getAllClients);
 router.delete('/clients/:id', protect, admin, deleteClient);
+router.get('/clients/:id/orders', protect, admin, getUserOrders);
 router.get('/orders', protect, admin, getAllOrders);
 router.put('/orders/:id/status', protect, admin, updateOrderStatus);
 router.post('/promotions', protect, admin, createPromotion);

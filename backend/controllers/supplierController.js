@@ -70,6 +70,17 @@ exports.deleteFournisseur = async (req, res) => {
     if (!fournisseur) {
       return res.status(404).json({ message: 'Fournisseur non trouvé' });
     }
+
+    // Vérifier si le fournisseur a des produits
+    const { DemandeLivraison } = require('../models');
+    const demandesLivraison = await DemandeLivraison.findAll({
+      where: { id_fournisseur: req.params.id }
+    });
+
+    if (demandesLivraison.length > 0) {
+      return res.status(400).json({ message: 'Impossible de supprimer ce fournisseur car il est associé à des produits' });
+    }
+
     await fournisseur.destroy();
     res.json({ message: 'Fournisseur supprimé avec succès' });
   } catch (error) {

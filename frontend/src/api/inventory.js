@@ -10,6 +10,9 @@ export const inventoryAPI = {
   // Récupérer un inventaire par ID
   getInventoryById: (id) => api.get(`/inventory/${id}`),
 
+  // Récupérer les lignes d'un inventaire
+  getInventoryLines: (id) => api.get(`/inventory/${id}/lignes`),
+
   // Ajouter une ligne à un inventaire
   addInventoryLine: (id, data) => api.post(`/inventory/${id}/lignes`, data),
 

@@ -1,4 +1,4 @@
-const { DemandeRemboursement, Commande, Utilisateur } = require('../models');
+const { DemandeRemboursement, Commande, Utilisateur, Avoir } = require('../models');
 
 // Créer une demande de remboursement/échange
 exports.createDemande = async (req, res) => {
@@ -79,7 +79,42 @@ exports.getAllDemandes = async (req, res) => {
       ],
       order: [['date_demande', 'DESC']]
     });
-    res.json(demandes);
+
+    // Récupérer les commandes avec le statut "Remboursement demandé" qui n'ont pas de demande dans DemandeRemboursement
+    const commandesRemboursement = await Commande.findAll({
+      where: { statut: 'Remboursement demandé' },
+      include: [
+        { model: Utilisateur, as: 'Utilisateur', attributes: ['nom', 'email'] }
+      ]
+    });
+
+    // Filtrer les commandes qui n'ont pas déjà une demande
+    const commandeIds = demandes.map(d => d.id_commande);
+    const commandesSansDemande = commandesRemboursement.filter(c => !commandeIds.includes(c.id_commande));
+
+    // Créer des demandes virtuelles pour ces commandes
+    const demandesVirtuelles = commandesSansDemande.map(c => ({
+      id_demande: `CMD-${c.id_commande}`,
+      id_commande: c.id_commande,
+      id_utilisateur: c.id_utilisateur,
+      type_demande: 'remboursement',
+      raison: c.raison_remboursement || 'Demande de remboursement',
+      description: c.raison_remboursement || 'Demande de remboursement',
+      statut: 'en_attente',
+      date_demande: c.updatedAt,
+      commande: c,
+      utilisateur: c.Utilisateur,
+      isLegacy: true
+    }));
+
+    // Combiner les demandes existantes et les demandes virtuelles
+    const toutesDemandes = [...demandes, ...demandesVirtuelles].sort((a, b) => {
+      const dateA = a.date_demande || a.updatedAt;
+      const dateB = b.date_demande || b.updatedAt;
+      return new Date(dateB) - new Date(dateA);
+    });
+
+    res.json(toutesDemandes);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -89,24 +124,83 @@ exports.getAllDemandes = async (req, res) => {
 exports.approveDemande = async (req, res) => {
   try {
     const { montant_rembourse, notes_admin } = req.body;
-    const demande = await DemandeRemboursement.findByPk(req.params.id);
+    const id = req.params.id;
 
-    if (!demande) {
-      return res.status(404).json({ message: 'Demande non trouvée' });
+    // Vérifier si c'est une demande virtuelle (CMD-X)
+    if (id.startsWith('CMD-')) {
+      const commandeId = parseInt(id.replace('CMD-', ''));
+      const commande = await Commande.findByPk(commandeId, {
+        include: [{ model: Utilisateur, as: 'Utilisateur' }]
+      });
+
+      if (!commande) {
+        return res.status(404).json({ message: 'Commande non trouvée' });
+      }
+
+      // Créer une vraie demande de remboursement
+      const demande = await DemandeRemboursement.create({
+        id_commande: commande.id_commande,
+        id_utilisateur: commande.id_utilisateur,
+        type_demande: 'remboursement',
+        raison: commande.raison_remboursement || 'Demande de remboursement',
+        description: commande.raison_remboursement || 'Demande de remboursement',
+        statut: 'approuve',
+        montant_rembourse,
+        notes_admin,
+        date_demande: commande.updatedAt,
+        date_traitement: new Date()
+      });
+
+      // Mettre à jour le statut de la commande
+      await commande.update({ statut: 'Remboursé' });
+
+      res.json(demande);
+    } else {
+      // Demande normale existante dans la base de données
+      const demande = await DemandeRemboursement.findByPk(id);
+
+      if (!demande) {
+        return res.status(404).json({ message: 'Demande non trouvée' });
+      }
+
+      if (demande.statut !== 'en_attente') {
+        return res.status(400).json({ message: 'Cette demande a déjà été traitée' });
+      }
+
+      await demande.update({
+        statut: 'approuve',
+        montant_rembourse,
+        notes_admin,
+        date_traitement: new Date()
+      });
+
+      // Mettre à jour le statut de la commande associée
+      const commande = await Commande.findByPk(demande.id_commande);
+      if (commande) {
+        await commande.update({ statut: 'Remboursé' });
+      }
+
+      // Si le type de demande est "avoir", créer un avoir automatiquement
+      if (demande.type_demande === 'avoir' && montant_rembourse) {
+        try {
+          const numeroAvoir = `AVR-${Date.now()}-${demande.id_commande}`;
+          await Avoir.create({
+            numero_avoir: numeroAvoir,
+            montant: montant_rembourse,
+            motif: `Remboursement de la commande #${demande.id_commande} - ${demande.raison}`,
+            id_utilisateur: demande.id_utilisateur,
+            id_commande: demande.id_commande,
+            statut: 'en attente',
+            notes: notes_admin || ''
+          });
+        } catch (avoirError) {
+          console.error('Erreur lors de la création de l\'avoir:', avoirError);
+          // Continuer même si la création de l'avoir échoue
+        }
+      }
+
+      res.json(demande);
     }
-
-    if (demande.statut !== 'en_attente') {
-      return res.status(400).json({ message: 'Cette demande a déjà été traitée' });
-    }
-
-    await demande.update({
-      statut: 'approuve',
-      montant_rembourse,
-      notes_admin,
-      date_traitement: new Date()
-    });
-
-    res.json(demande);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -116,23 +210,60 @@ exports.approveDemande = async (req, res) => {
 exports.rejectDemande = async (req, res) => {
   try {
     const { notes_admin } = req.body;
-    const demande = await DemandeRemboursement.findByPk(req.params.id);
+    const id = req.params.id;
 
-    if (!demande) {
-      return res.status(404).json({ message: 'Demande non trouvée' });
+    // Vérifier si c'est une demande virtuelle (CMD-X)
+    if (id.startsWith('CMD-')) {
+      const commandeId = parseInt(id.replace('CMD-', ''));
+      const commande = await Commande.findByPk(commandeId);
+
+      if (!commande) {
+        return res.status(404).json({ message: 'Commande non trouvée' });
+      }
+
+      // Créer une vraie demande de remboursement refusée
+      const demande = await DemandeRemboursement.create({
+        id_commande: commande.id_commande,
+        id_utilisateur: commande.id_utilisateur,
+        type_demande: 'remboursement',
+        raison: commande.raison_remboursement || 'Demande de remboursement',
+        description: commande.raison_remboursement || 'Demande de remboursement',
+        statut: 'refuse',
+        notes_admin,
+        date_demande: commande.updatedAt,
+        date_traitement: new Date()
+      });
+
+      // Mettre à jour le statut de la commande
+      await commande.update({ statut: 'Livrée' });
+
+      res.json(demande);
+    } else {
+      // Demande normale existante dans la base de données
+      const demande = await DemandeRemboursement.findByPk(id);
+
+      if (!demande) {
+        return res.status(404).json({ message: 'Demande non trouvée' });
+      }
+
+      if (demande.statut !== 'en_attente') {
+        return res.status(400).json({ message: 'Cette demande a déjà été traitée' });
+      }
+
+      await demande.update({
+        statut: 'refuse',
+        notes_admin,
+        date_traitement: new Date()
+      });
+
+      // Mettre à jour le statut de la commande associée
+      const commande = await Commande.findByPk(demande.id_commande);
+      if (commande) {
+        await commande.update({ statut: 'Livrée' });
+      }
+
+      res.json(demande);
     }
-
-    if (demande.statut !== 'en_attente') {
-      return res.status(400).json({ message: 'Cette demande a déjà été traitée' });
-    }
-
-    await demande.update({
-      statut: 'refuse',
-      notes_admin,
-      date_traitement: new Date()
-    });
-
-    res.json(demande);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -141,22 +272,48 @@ exports.rejectDemande = async (req, res) => {
 // Marquer une demande comme traitée (admin)
 exports.markAsTraitee = async (req, res) => {
   try {
-    const demande = await DemandeRemboursement.findByPk(req.params.id);
+    const id = req.params.id;
 
-    if (!demande) {
-      return res.status(404).json({ message: 'Demande non trouvée' });
+    // Vérifier si c'est une demande virtuelle (CMD-X)
+    if (id.startsWith('CMD-')) {
+      const commandeId = parseInt(id.replace('CMD-', ''));
+      const demande = await DemandeRemboursement.findOne({
+        where: { id_commande: commandeId }
+      });
+
+      if (!demande) {
+        return res.status(404).json({ message: 'Demande non trouvée' });
+      }
+
+      if (demande.statut !== 'approuve') {
+        return res.status(400).json({ message: 'Seules les demandes approuvées peuvent être marquées comme traitées' });
+      }
+
+      await demande.update({
+        statut: 'traite',
+        date_traitement: new Date()
+      });
+
+      res.json(demande);
+    } else {
+      // Demande normale existante dans la base de données
+      const demande = await DemandeRemboursement.findByPk(id);
+
+      if (!demande) {
+        return res.status(404).json({ message: 'Demande non trouvée' });
+      }
+
+      if (demande.statut !== 'approuve') {
+        return res.status(400).json({ message: 'Seules les demandes approuvées peuvent être marquées comme traitées' });
+      }
+
+      await demande.update({
+        statut: 'traite',
+        date_traitement: new Date()
+      });
+
+      res.json(demande);
     }
-
-    if (demande.statut !== 'approuve') {
-      return res.status(400).json({ message: 'Seules les demandes approuvées peuvent être marquées comme traitées' });
-    }
-
-    await demande.update({
-      statut: 'traite',
-      date_traitement: new Date()
-    });
-
-    res.json(demande);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }

@@ -15,11 +15,18 @@ const Fournisseur = require('./Fournisseur');
 const Avoir = require('./Avoir');
 const ZoneStockage = require('./ZoneStockage');
 const Caisse = require('./Caisse');
+const DemandeLivraison = require('./DemandeLivraison');
 
 // Définir l'association entre Avis et Commande après le chargement de tous les modèles
 // pour éviter la dépendance circulaire
 Avis.belongsTo(Commande, { foreignKey: 'id_commande', as: 'Commande' });
 Commande.hasMany(Avis, { foreignKey: 'id_commande', as: 'Avis' });
+
+// Associations pour DemandeLivraison
+DemandeLivraison.belongsTo(Produit, { foreignKey: 'id_produit', as: 'produit' });
+DemandeLivraison.belongsTo(Fournisseur, { foreignKey: 'id_fournisseur', as: 'fournisseur' });
+Produit.hasMany(DemandeLivraison, { foreignKey: 'id_produit', as: 'demandesLivraison' });
+Fournisseur.hasMany(DemandeLivraison, { foreignKey: 'id_fournisseur', as: 'demandesLivraison' });
 
 module.exports = {
   Utilisateur,
@@ -38,5 +45,6 @@ module.exports = {
   Fournisseur,
   Avoir,
   ZoneStockage,
-  Caisse
+  Caisse,
+  DemandeLivraison
 };

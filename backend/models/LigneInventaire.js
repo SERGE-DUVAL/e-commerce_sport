@@ -1,13 +1,19 @@
 const Sequelize = require('sequelize');
 const sequelize = require('../config/database');
-const Inventaire = require('./Inventaire');
-const Produit = require('./Produit');
 
 const LigneInventaire = sequelize.define('LigneInventaire', {
   id_ligne: {
     type: Sequelize.INTEGER,
     primaryKey: true,
     autoIncrement: true
+  },
+  id_inventaire: {
+    type: Sequelize.INTEGER,
+    allowNull: false
+  },
+  id_produit: {
+    type: Sequelize.INTEGER,
+    allowNull: false
   },
   quantite_theorique: {
     type: Sequelize.INTEGER,
@@ -33,10 +39,7 @@ const LigneInventaire = sequelize.define('LigneInventaire', {
   timestamps: true
 });
 
-LigneInventaire.belongsTo(Inventaire, { foreignKey: 'id_inventaire', as: 'inventaire' });
-Inventaire.hasMany(LigneInventaire, { foreignKey: 'id_inventaire', as: 'lignes' });
-
-LigneInventaire.belongsTo(Produit, { foreignKey: 'id_produit', as: 'produit' });
-Produit.hasMany(LigneInventaire, { foreignKey: 'id_produit', as: 'lignesInventaires' });
+// Les associations sont définies dans les fichiers des modèles principaux (Inventaire.js et Produit.js)
+// pour éviter les imports circulaires
 
 module.exports = LigneInventaire;

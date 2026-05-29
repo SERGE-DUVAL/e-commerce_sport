@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Spinner, Form, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Spinner, Form, Modal, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { FaBolt, FaChartLine, FaCreditCard, FaDumbbell, FaRobot, FaShieldAlt, FaShippingFast, FaStar, FaMapMarkerAlt, FaCloudSun, FaTruck } from 'react-icons/fa';
+import { FaBolt, FaChartLine, FaCreditCard, FaDumbbell, FaRobot, FaShieldAlt, FaShippingFast, FaStar, FaMapMarkerAlt, FaCloudSun, FaTruck, FaShoppingCart, FaFire, FaTrophy, FaHeadset } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { deliveryAPI } from '../api/delivery';
+import { productAPI } from '../services/api';
 
 const Home = () => {
   const { user } = useAuth();
@@ -14,6 +15,8 @@ const Home = () => {
   const [selectedCity, setSelectedCity] = useState('yaounde');
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   // Coordonnées des villes
   const cities = {
@@ -24,6 +27,7 @@ const Home = () => {
   useEffect(() => {
     loadWeather();
     loadLivreurs();
+    loadFeaturedProducts();
   }, [selectedCity]);
 
   const loadWeather = async () => {
@@ -50,6 +54,27 @@ const Home = () => {
       setLoadingLivreurs(false);
     }
   };
+
+  const loadFeaturedProducts = async () => {
+    setLoadingProducts(true);
+    try {
+      const response = await productAPI.getAll({ limit: 8 });
+      setFeaturedProducts(response.data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des produits:', error);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  const categoryImages = {
+    'Football': '/images2/Foot2.jfif',
+    'Running': '/images2/running.jfif',
+    'Fitness': '/images2/Fitness.jfif',
+    'Tennis': '/images2/Tennis.jfif',
+    'Basketball': '/images2/Basket.jfif'
+  };
+
   const categories = [
     {
       title: 'Football',
@@ -101,11 +126,11 @@ const Home = () => {
     }
   ];
 
-  const features = [
-    { icon: <FaCreditCard />, title: 'Paiement Mobile', text: 'Paiement local via Switch, Orange Money et MTN MoMo.' },
-    { icon: <FaRobot />, title: 'Assistant IA', text: 'Chatbot connecté à la base pour les stocks et commandes.' },
-    { icon: <FaStar />, title: 'Avis certifiés', text: 'Notes vérifiées uniquement après commande livrée.' },
-    { icon: <FaChartLine />, title: 'Back-office', text: 'Statistiques, ventes, clients, promotions, PDF et CSV.' }
+  const benefits = [
+    { icon: <FaCreditCard />, title: 'Paiement Mobile Local', text: 'Payez facilement avec Switch, Orange Money et MTN MoMo' },
+    { icon: <FaRobot />, title: 'Assistant IA Intelligent', text: 'Chatbot connecté à votre base pour vous aider 24/7' },
+    { icon: <FaStar />, title: 'Avis Certifiés', text: 'Notes vérifiées uniquement après livraison effective' },
+    { icon: <FaShippingFast />, title: 'Livraison Rapide', text: 'Suivi GPS en temps réel et livraison express' }
   ];
 
   return (
@@ -116,24 +141,26 @@ const Home = () => {
         <Container>
           <Row className="align-items-center g-5">
             <Col lg={6} className="hero-copy">
-              <span className="eyebrow"><FaBolt /> Plateforme e-commerce sportive intelligente</span>
-              <h1>Sport-Equip transforme l’achat d’équipements sportifs en expérience premium.</h1>
+              <span className="eyebrow"><FaBolt /> Équipements sportifs de qualité</span>
+              <h1>Équipez-vous pour le sport avec Sport-Equip</h1>
               <p>
-                Découvrez une boutique moderne dédiée au Football, Running, Fitness, Tennis et Basketball,
-                avec paiement mobile local, fidélité, avis certifiés et assistant IA connecté.
+                Découvrez notre gamme d'équipements sportifs : crampons, chaussures de running, haltères, raquettes de tennis et accessoires.
+                Paiement mobile sécurisé, livraison rapide et programme de fidélité.
               </p>
               <div className="hero-actions">
-                <Button as={Link} to="/connexion" className="btn-neon" size="lg" disabled={!!user}>
-                  {user ? 'Déjà connecté' : 'Réservé à la connexion'}
+                <Button as={Link} to="/catalogue" className="btn-neon" size="lg">
+                  <FaShoppingCart /> Voir le catalogue
                 </Button>
-                <Button as={Link} to="/catalogue" variant="outline-light" size="lg" className="btn-glass">
-                  Voir le catalogue
-                </Button>
+                {!user && (
+                  <Button as={Link} to="/connexion" variant="outline-light" size="lg" className="btn-glass">
+                    Créer un compte
+                  </Button>
+                )}
               </div>
               <div className="hero-metrics">
-                <div><strong>20+</strong><span>articles initiaux</span></div>
-                <div><strong>XAF</strong><span>prix en FCFA</span></div>
-                <div><strong>IA</strong><span>assistant client</span></div>
+                <div><strong>20+</strong><span>Produits disponibles</span></div>
+                <div><strong>FCFA</strong><span>Devise locale</span></div>
+                <div><strong>IA</strong><span>Assistant disponible</span></div>
               </div>
             </Col>
             <Col lg={6}>
@@ -141,15 +168,93 @@ const Home = () => {
                 <div className="orbit-ring orbit-one" />
                 <div className="orbit-ring orbit-two" />
                 <div className="sport-card-3d main-card">
-                  <div className="shoe-shape">👟</div>
-                  <h3>Performance Gear</h3>
-                  <p>Chaussures, maillots, accessoires et équipements sportifs professionnels.</p>
+                  <div className="shoe-shape">🏆</div>
+                  <h3>Excellence Sportive</h3>
+                  <p>Équipements professionnels pour atteindre vos objectifs.</p>
                 </div>
-                <div className="floating-chip chip-one"><FaShippingFast /> Livraison rapide</div>
+                <div className="floating-chip chip-one"><FaShippingFast /> Livraison express</div>
                 <div className="floating-chip chip-two"><FaShieldAlt /> Paiement sécurisé</div>
-                <div className="floating-chip chip-three"><FaDumbbell /> Stock réel</div>
+                <div className="floating-chip chip-three"><FaDumbbell /> Stock disponible</div>
               </div>
             </Col>
+          </Row>
+        </Container>
+      </section>
+
+      {/* Featured Products Section */}
+      <section className="featured-products-section">
+        <Container>
+          <div className="section-heading">
+            <span>Nouveautés</span>
+            <h2>Produits populaires</h2>
+            <p>Découvrez nos articles les plus vendus et les mieux notés par nos clients</p>
+          </div>
+          {loadingProducts ? (
+            <div className="text-center py-5">
+              <Spinner animation="border" variant="primary" />
+            </div>
+          ) : featuredProducts.length > 0 ? (
+            <Row className="g-4">
+              {featuredProducts.slice(0, 8).map((product) => (
+                <Col md={6} lg={3} key={product.id_produit}>
+                  <Card className="product-card h-100">
+                    <div className="product-image-wrapper">
+                      <Card.Img 
+                        variant="top" 
+                        src={categoryImages[product.categorie] || '/images2/default.jpg'} 
+                        alt={product.titre} 
+                      />
+                      {product.stock > 0 && (
+                        <Badge className="stock-badge" bg="success">En stock</Badge>
+                      )}
+                    </div>
+                    <Card.Body>
+                      <Card.Title className="product-title">{product.titre}</Card.Title>
+                      <Card.Text className="product-category">{product.categorie}</Card.Text>
+                      <div className="product-price">
+                        <span className="price-amount">{product.prix_xaf?.toLocaleString()} FCFA</span>
+                      </div>
+                      <Button as={Link} to={`/produit/${product.id_produit}`} className="btn-primary w-100 mt-3">
+                        Voir détails
+                      </Button>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          ) : (
+            <div className="text-center py-5">
+              <p className="text-muted">Aucun produit disponible pour le moment</p>
+            </div>
+          )}
+          <div className="text-center mt-4">
+            <Button as={Link} to="/catalogue" variant="outline-primary" size="lg">
+              Voir tous les produits <FaShoppingCart className="ms-2" />
+            </Button>
+          </div>
+        </Container>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="benefits-section">
+        <Container>
+          <div className="section-heading">
+            <span>Nos avantages</span>
+            <h2>Pourquoi choisir Sport-Equip ?</h2>
+            <p>Découvrez ce qui nous distingue des autres plateformes d'équipement sportif</p>
+          </div>
+          <Row className="g-4">
+            {benefits.map((benefit) => (
+              <Col md={6} lg={3} key={benefit.title}>
+                <Card className="benefit-card h-100">
+                  <Card.Body>
+                    <div className="benefit-icon">{benefit.icon}</div>
+                    <Card.Title>{benefit.title}</Card.Title>
+                    <Card.Text>{benefit.text}</Card.Text>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
           </Row>
         </Container>
       </section>
@@ -180,32 +285,6 @@ const Home = () => {
                 </Col>
               </Row>
             </Col>
-          </Row>
-        </Container>
-      </section>
-
-      <section className="info-section">
-        <Container>
-          <div className="section-heading">
-            <span>Pourquoi Sport-Equip ?</span>
-            <h2>Une plateforme conçue pour vendre, gérer et fidéliser.</h2>
-            <p>
-              Le site combine une vitrine e-commerce, une logique de paiement local, un système de fidélité,
-              un chatbot intelligent et une console d’administration complète.
-            </p>
-          </div>
-          <Row className="g-4">
-            {features.map((feature) => (
-              <Col md={6} lg={3} key={feature.title}>
-                <Card className="feature-card h-100">
-                  <Card.Body>
-                    <div className="feature-icon">{feature.icon}</div>
-                    <Card.Title>{feature.title}</Card.Title>
-                    <Card.Text>{feature.text}</Card.Text>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
           </Row>
         </Container>
       </section>

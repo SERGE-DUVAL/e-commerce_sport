@@ -4,9 +4,15 @@ const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 
 // Générer un code-barres EAN13
-exports.generateEAN13 = (req, res) => {
+exports.generateEAN13 = async (req, res) => {
   try {
     const { id_produit } = req.body;
+
+    // Vérifier si le produit a déjà un code barre
+    const existingCode = await CodeBarre.findOne({ where: { id_produit } });
+    if (existingCode) {
+      return res.json({ code_barre: existingCode.code_barre, existing: true });
+    }
 
     // Générer un code EAN13 unique (12 chiffres + checksum)
     let code = '';
@@ -23,7 +29,7 @@ exports.generateEAN13 = (req, res) => {
     const checksum = (10 - (sum % 10)) % 10;
     const ean13 = code + checksum;
 
-    res.json({ code_barre: ean13 });
+    res.json({ code_barre: ean13, existing: false });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -57,6 +63,12 @@ exports.createCodeBarre = async (req, res) => {
     const produit = await Produit.findByPk(id_produit);
     if (!produit) {
       return res.status(404).json({ message: 'Produit non trouvé' });
+    }
+
+    // Vérifier si le produit a déjà un code-barres
+    const existingProductCode = await CodeBarre.findOne({ where: { id_produit } });
+    if (existingProductCode) {
+      return res.status(400).json({ message: 'Ce produit a déjà un code-barres' });
     }
 
     // Vérifier si le code-barres existe déjà

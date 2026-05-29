@@ -10,6 +10,9 @@ export const creditAPI = {
   // Récupérer un avoir par ID
   getCreditById: (id) => api.get(`/credits/${id}`),
 
+  // Mettre à jour un avoir
+  updateCredit: (id, data) => api.put(`/credits/${id}`, data),
+
   // Utiliser un avoir
   useCredit: (id) => api.put(`/credits/${id}/use`),
 

@@ -1,4 +1,4 @@
-const { Commande, LigneCommande, Produit, Utilisateur, Promotion, Caisse } = require('../models');
+const { Commande, LigneCommande, Produit, Utilisateur, Promotion, Caisse, DemandeRemboursement, MouvementStock } = require('../models');
 const { Op } = require('sequelize');
 const PDFDocument = require('pdfkit');
 
@@ -160,14 +160,19 @@ exports.processPayment = async (req, res) => {
     }
 
     // Sélectionner une caisse ouverte automatiquement si non spécifiée
+    // Choisir la caisse avec le plus petit solde parmi les caisses ouvertes
     let caisse = null;
     if (id_caisse) {
       caisse = await Caisse.findByPk(id_caisse);
     } else {
-      caisse = await Caisse.findOne({
-        where: { statut: 'ouverte' },
-        order: [['createdAt', 'ASC']]
+      const caissesOuvertes = await Caisse.findAll({
+        where: { statut: 'ouverte' }
       });
+      
+      if (caissesOuvertes.length > 0) {
+        // Trier par solde actuel croissant et prendre la première
+        caisse = caissesOuvertes.sort((a, b) => a.solde_actuel - b.solde_actuel)[0];
+      }
     }
 
     if (!caisse) {
@@ -193,15 +198,29 @@ exports.processPayment = async (req, res) => {
 
     // Mettre à jour le statut et lier à la caisse
     await commande.update({ 
-      statut: 'Payée',
+      statut: 'En livraison',
       id_caisse: caisse.id_caisse,
       montant_rembourse
     });
 
-    // Déduire le stock
+    // Déduire le stock et enregistrer les mouvements
     for (const ligne of commande.LigneCommandes) {
       const produit = await Produit.findByPk(ligne.id_produit);
-      await produit.update({ stock: produit.stock - ligne.quantite });
+      const stock_avant = produit.stock;
+      const stock_apres = stock_avant - ligne.quantite;
+      
+      await produit.update({ stock: stock_apres });
+      
+      // Enregistrer le mouvement de stock
+      await MouvementStock.create({
+        id_produit: produit.id_produit,
+        id_utilisateur: commande.id_utilisateur,
+        type_mouvement: 'sortie',
+        quantite: ligne.quantite,
+        stock_avant,
+        stock_apres,
+        motif: `Vente - Commande #${commande.id_commande}`
+      });
     }
 
     // Calculer et créditer les points de fidélité
@@ -279,12 +298,19 @@ exports.generateCashReceipt = async (req, res) => {
 
     doc.pipe(res);
 
-    // En-tête
-    doc.rect(0, 0, doc.page.width, 80).fill('#1a237e');
-    doc.fillColor('white').fontSize(24).text('Sport-Equip', 30, 25, { align: 'left' });
-    doc.fontSize(12).text('Ticket de Caisse', 30, 55, { align: 'left' });
-    doc.fontSize(10).text(`N° ${commande.id_commande}`, 30, 70, { align: 'left' });
-    doc.fontSize(10).text(new Date(commande.createdAt).toLocaleString('fr-FR'), 400, 70, { align: 'right' });
+    // En-tête avec logo
+    doc.rect(0, 0, doc.page.width, 100).fill('#1a237e');
+    
+    // Logo Sport-Equip (cercle avec SE)
+    doc.circle(50, 50, 30).fill('#ffffff');
+    doc.fillColor('#1a237e').fontSize(18).font('Helvetica-Bold').text('SE', 38, 42);
+    
+    doc.fillColor('white').fontSize(28).font('Helvetica-Bold').text('Sport-Equip', 100, 35, { align: 'left' });
+    doc.fontSize(12).text('Équipements Sportifs Professionnels', 100, 60, { align: 'left' });
+    doc.fontSize(10).text('Ticket de Caisse', 100, 75, { align: 'left' });
+    doc.fontSize(10).text(`N° ${commande.id_commande}`, 400, 40, { align: 'right' });
+    doc.fontSize(10).text(new Date(commande.createdAt).toLocaleString('fr-FR'), 400, 55, { align: 'right' });
+    doc.fontSize(10).text(`Statut: ${commande.statut}`, 400, 70, { align: 'right' });
 
     // Informations caisse
     doc.fillColor('black');
@@ -306,60 +332,67 @@ exports.generateCashReceipt = async (req, res) => {
 
     // Détails articles
     doc.moveDown(2);
-    doc.fontSize(14).text('Articles', { underline: true });
+    doc.fontSize(14).text('Articles Commandés', { underline: true });
     doc.moveDown();
 
     const tableTop = doc.y;
     const tableHeaders = ['Article', 'Qté', 'Prix unitaire', 'Total'];
-    const columnWidths = [180, 60, 100, 100];
-    const rowHeight = 25;
+    const columnWidths = [200, 60, 100, 100];
+    const rowHeight = 30;
     const startX = 30;
 
-    // En-tête tableau
-    doc.fontSize(9).fillColor('#1a237e');
+    // En-tête tableau avec fond
+    doc.rect(startX, tableTop, columnWidths.reduce((a, b) => a + b, 0), 20).fill('#e8eaf6');
+    doc.fontSize(10).fillColor('#1a237e').font('Helvetica-Bold');
     tableHeaders.forEach((header, i) => {
-      doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), tableTop, {
-        width: columnWidths[i],
+      doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0) + 5, tableTop + 5, {
+        width: columnWidths[i] - 10,
         align: 'left'
       });
     });
 
     // Ligne de séparation
-    doc.moveTo(startX, tableTop + 12)
-       .lineTo(startX + columnWidths.reduce((a, b) => a + b, 0), tableTop + 12)
+    doc.moveTo(startX, tableTop + 20)
+       .lineTo(startX + columnWidths.reduce((a, b) => a + b, 0), tableTop + 20)
        .stroke();
 
     // Données articles
-    doc.fillColor('black');
+    doc.fillColor('black').font('Helvetica');
     commande.LigneCommandes.forEach((ligne, index) => {
-      const y = tableTop + 20 + (index * rowHeight);
+      const y = tableTop + 25 + (index * rowHeight);
 
       // Nouvelle page si nécessaire
-      if (y > doc.page.height - 50) {
+      if (y > doc.page.height - 80) {
         doc.addPage();
-        doc.fillColor('#1a237e');
+        const newTableTop = 30;
+        doc.rect(startX, newTableTop, columnWidths.reduce((a, b) => a + b, 0), 20).fill('#e8eaf6');
+        doc.fillColor('#1a237e').font('Helvetica-Bold');
         tableHeaders.forEach((header, i) => {
-          doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), 30, {
-            width: columnWidths[i],
+          doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0) + 5, newTableTop + 5, {
+            width: columnWidths[i] - 10,
             align: 'left'
           });
         });
-        doc.moveTo(startX, 42)
-           .lineTo(startX + columnWidths.reduce((a, b) => a + b, 0), 42)
+        doc.moveTo(startX, newTableTop + 20)
+           .lineTo(startX + columnWidths.reduce((a, b) => a + b, 0), newTableTop + 20)
            .stroke();
-        doc.fillColor('black');
+        doc.fillColor('black').font('Helvetica');
       }
+
+      // Bordure autour de chaque ligne
+      const currentY = y;
+      doc.rect(startX, currentY, columnWidths.reduce((a, b) => a + b, 0), rowHeight).stroke();
 
       const rowData = [
         ligne.Produit?.titre || 'Produit supprimé',
         ligne.quantite,
-        `${ligne.prix_unitaire_achat} FCFA`,
-        `${ligne.quantite * ligne.prix_unitaire_achat} FCFA`
+        `${ligne.prix_unitaire_achat.toLocaleString('fr-FR')} FCFA`,
+        `${(ligne.quantite * ligne.prix_unitaire_achat).toLocaleString('fr-FR')} FCFA`
       ];
 
       rowData.forEach((data, i) => {
-        doc.text(data, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), y, {
-          width: columnWidths[i],
+        doc.text(data, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0) + 5, currentY + 8, {
+          width: columnWidths[i] - 10,
           align: 'left'
         });
       });
@@ -406,6 +439,131 @@ exports.generateCashReceipt = async (req, res) => {
     });
 
     doc.end();
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
+// Annuler une commande
+exports.cancelOrder = async (req, res) => {
+  try {
+    const commande = await Commande.findByPk(req.params.id, {
+      include: [{
+        model: LigneCommande,
+        as: 'LigneCommandes'
+      }]
+    });
+
+    if (!commande) {
+      return res.status(404).json({ message: 'Commande non trouvée' });
+    }
+
+    if (commande.statut !== 'Payée' && commande.statut !== 'En livraison') {
+      return res.status(400).json({ message: 'Seules les commandes payées ou en livraison peuvent être annulées' });
+    }
+
+    await commande.update({ statut: 'Annulée' });
+
+    // Remettre le stock et enregistrer les mouvements
+    if (commande.LigneCommandes) {
+      for (const ligne of commande.LigneCommandes) {
+        const produit = await Produit.findByPk(ligne.id_produit);
+        if (produit) {
+          const stock_avant = produit.stock;
+          const stock_apres = stock_avant + ligne.quantite;
+          
+          await produit.update({ stock: stock_apres });
+          
+          // Enregistrer le mouvement de stock
+          await MouvementStock.create({
+            id_produit: produit.id_produit,
+            id_utilisateur: commande.id_utilisateur,
+            type_mouvement: 'entree',
+            quantite: ligne.quantite,
+            stock_avant,
+            stock_apres,
+            motif: `Annulation - Commande #${commande.id_commande}`
+          });
+        }
+      }
+    }
+
+    res.json({ message: 'Commande annulée avec succès', commande });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
+// Demander un remboursement
+exports.requestRefund = async (req, res) => {
+  try {
+    const { reason, type_demande, description } = req.body;
+    const commande = await Commande.findByPk(req.params.id);
+
+    if (!commande) {
+      return res.status(404).json({ message: 'Commande non trouvée' });
+    }
+
+    if (commande.statut !== 'Livrée') {
+      return res.status(400).json({ message: 'Seules les commandes livrées peuvent faire l\'objet d\'un remboursement' });
+    }
+
+    // Vérifier qu'il n'y a pas déjà une demande pour cette commande
+    const demandeExistante = await DemandeRemboursement.findOne({
+      where: { id_commande: commande.id_commande }
+    });
+
+    if (demandeExistante) {
+      return res.status(400).json({ message: 'Une demande de remboursement existe déjà pour cette commande' });
+    }
+
+    // Créer une demande de remboursement
+    const demande = await DemandeRemboursement.create({
+      id_commande: commande.id_commande,
+      id_utilisateur: commande.id_utilisateur,
+      type_demande: type_demande || 'avoir',
+      raison: reason,
+      description: description || reason,
+      statut: 'en_attente',
+      date_demande: new Date()
+    });
+
+    // Mettre à jour le statut de la commande
+    await commande.update({ 
+      statut: 'Remboursement demandé'
+    });
+
+    res.json({ message: 'Demande de remboursement envoyée avec succès', demande });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
+// Confirmer la réception
+exports.confirmReception = async (req, res) => {
+  try {
+    const commande = await Commande.findByPk(req.params.id);
+
+    if (!commande) {
+      return res.status(404).json({ message: 'Commande non trouvée' });
+    }
+
+    if (commande.statut !== 'En livraison' && commande.statut !== 'Payée') {
+      return res.status(400).json({ message: 'Seules les commandes en livraison ou payées peuvent être confirmées' });
+    }
+
+    await commande.update({ statut: 'Livrée' });
+
+    // Mettre à jour le statut de l'affectation de livraison
+    const { AffectationLivraison } = require('../models');
+    const affectation = await AffectationLivraison.findOne({
+      where: { id_commande: commande.id_commande }
+    });
+    if (affectation) {
+      await affectation.update({ statut: 'effectué' });
+    }
+
+    res.json({ message: 'Réception confirmée avec succès', commande });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }

@@ -5,7 +5,6 @@ import { FaShoppingCart, FaUser, FaRobot, FaUserShield } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import Chatbot from './Chatbot';
-import logo from '../assets/logo.svg';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -24,8 +23,8 @@ const Header = () => {
       <Navbar expand="lg" sticky="top" className="navbar-pro">
         <Container>
           <Navbar.Brand as={Link} to="/" className="d-flex align-items-center" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-            <img src={logo} alt="Sport Equip Logo" width="60" height="60" className="me-3" style={{ filter: 'drop-shadow(0 4px 8px rgba(97, 244, 196, 0.4))' }} />
-            <span style={{ background: 'linear-gradient(135deg, #61f4c4, #4facfe)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Sport-Equip</span>
+            <div className="brand-mark">SE</div>
+            <span style={{ background: 'linear-gradient(135deg, #4a90a4, #6c8ebf)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Sport-Equip</span>
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">

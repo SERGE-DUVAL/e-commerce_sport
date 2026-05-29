@@ -50,7 +50,10 @@ export const orderAPI = {
       url: `/api/orders/${id}/ticket`,
       method: 'GET'
     };
-  }
+  },
+  cancelOrder: (id) => api.put(`/orders/${id}/cancel`),
+  confirmReception: (id) => api.put(`/orders/${id}/confirm-reception`),
+  requestRefund: (id, data) => api.post(`/orders/${id}/refund`, data)
 };
 
 export const reviewAPI = {

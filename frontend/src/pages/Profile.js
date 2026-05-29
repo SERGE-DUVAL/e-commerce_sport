@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Row, Col, Card, Form, Button, Table, Alert, Modal, Spinner, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import { userAPI, orderAPI, reviewAPI } from '../services/api';
+import api from '../services/api';
 import { deliveryAPI } from '../api/delivery';
 import { FaCheck, FaStar, FaUser, FaEdit, FaSignOutAlt, FaShoppingBag, FaDownload } from 'react-icons/fa';
 
@@ -23,6 +24,13 @@ const Profile = () => {
     note: 5,
     commentaire: '',
     type_avis: 'produit'
+  });
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [selectedOrderForRefund, setSelectedOrderForRefund] = useState(null);
+  const [refundForm, setRefundForm] = useState({
+    type_demande: 'avoir',
+    raison: '',
+    description: ''
   });
 
   useEffect(() => {
@@ -91,7 +99,15 @@ const Profile = () => {
     try {
       const affectation = affectations.find(a => a.id_commande === orderId);
       if (affectation) {
-        await deliveryAPI.generateDeliveryNote(affectation.id_affectation);
+        const response = await deliveryAPI.generateDeliveryNote(affectation.id_affectation);
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `bordereau-livraison-${affectation.id_affectation}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
         setMessage('Bordereau de livraison téléchargé');
         setTimeout(() => setMessage(''), 3000);
       }
@@ -102,11 +118,61 @@ const Profile = () => {
 
   const handleDownloadReceipt = async (orderId) => {
     try {
-      await orderAPI.generateCashReceipt(orderId);
+      const response = await api.get(`/orders/${orderId}/ticket`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `ticket-caisse-${orderId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
       setMessage('Ticket de caisse téléchargé');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       setMessage('Erreur lors du téléchargement du ticket');
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) {
+      return;
+    }
+    try {
+      await orderAPI.cancelOrder(orderId);
+      loadOrders();
+      setMessage('Commande annulée avec succès');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Erreur lors de l\'annulation de la commande');
+    }
+  };
+
+  const handleRequestRefund = (orderId) => {
+    const order = orders.find(o => o.id_commande === orderId);
+    setSelectedOrderForRefund(order);
+    setRefundForm({
+      type_demande: 'avoir',
+      raison: '',
+      description: ''
+    });
+    setShowRefundModal(true);
+  };
+
+  const handleConfirmRefund = async () => {
+    try {
+      await orderAPI.requestRefund(selectedOrderForRefund.id_commande, {
+        reason: refundForm.raison,
+        type_demande: refundForm.type_demande,
+        description: refundForm.description
+      });
+      setShowRefundModal(false);
+      setSelectedOrderForRefund(null);
+      loadOrders();
+      setMessage('Demande de remboursement envoyée avec succès');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Erreur lors de la demande de remboursement');
     }
   };
 
@@ -278,22 +344,22 @@ const Profile = () => {
                   <Button variant="primary" href="/catalogue">Découvrir nos produits</Button>
                 </div>
               ) : (
-                <Table responsive hover className="orders-table">
-                  <thead>
+                <Table responsive hover className="orders-table" style={{ color: '#000' }}>
+                  <thead style={{ backgroundColor: '#f8f9fa', color: '#000' }}>
                     <tr>
-                      <th>Commande #</th>
-                      <th>Date</th>
-                      <th>Total</th>
-                      <th>Statut</th>
-                      <th>Actions</th>
+                      <th style={{ color: '#000' }}>Commande #</th>
+                      <th style={{ color: '#000' }}>Date</th>
+                      <th style={{ color: '#000' }}>Total</th>
+                      <th style={{ color: '#000' }}>Statut</th>
+                      <th style={{ color: '#000' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {orders.map((order) => (
-                      <tr key={order.id_commande}>
-                        <td><strong>#{order.id_commande}</strong></td>
-                        <td>{new Date(order.createdAt).toLocaleDateString('fr-FR')}</td>
-                        <td className="fw-bold">{formatPrice(order.total_xaf)} FCFA</td>
+                      <tr key={order.id_commande} style={{ color: '#000' }}>
+                        <td style={{ color: '#000' }}><strong>#{order.id_commande}</strong></td>
+                        <td style={{ color: '#000' }}>{new Date(order.createdAt).toLocaleDateString('fr-FR')}</td>
+                        <td style={{ color: '#000' }} className="fw-bold">{formatPrice(order.total_xaf)} FCFA</td>
                         <td>
                           <Badge className={`order-status ${
                             order.statut === 'Livrée' ? 'status-delivered' :
@@ -308,6 +374,16 @@ const Profile = () => {
                             {(order.statut === 'En livraison' || order.statut === 'Payée') && (
                               <Button size="sm" variant="success" className="action-btn me-2" onClick={() => handleConfirmDelivery(order.id_commande)}>
                                 <FaCheck /> Confirmer
+                              </Button>
+                            )}
+                            {(order.statut === 'Payée' || order.statut === 'En livraison') && (
+                              <Button size="sm" variant="outline-danger" className="action-btn me-2" onClick={() => handleCancelOrder(order.id_commande)}>
+                                Annuler
+                              </Button>
+                            )}
+                            {order.statut === 'Livrée' && (
+                              <Button size="sm" variant="outline-warning" className="action-btn me-2" onClick={() => handleRequestRefund(order.id_commande)}>
+                                Remboursement
                               </Button>
                             )}
                             {order.statut === 'Payée' && (
@@ -339,6 +415,12 @@ const Profile = () => {
       <Modal show={showReviewModal} onHide={() => setShowReviewModal(false)}>
         <Modal.Header closeButton><Modal.Title>Laisser un avis</Modal.Title></Modal.Header>
         <Modal.Body>
+          {selectedOrder && (
+            <Alert variant="info" className="mb-3">
+              <strong>Commande #{selectedOrder.id_commande}</strong><br />
+              Montant: {selectedOrder.total_xaf?.toLocaleString('fr-FR')} FCFA
+            </Alert>
+          )}
           <Form onSubmit={handleSubmitReview}>
             <Form.Group className="mb-3">
               <Form.Label>Type d'avis</Form.Label>
@@ -364,6 +446,48 @@ const Profile = () => {
             <Button type="submit" variant="primary">Envoyer l'avis</Button>
           </Form>
         </Modal.Body>
+      </Modal>
+      <Modal show={showRefundModal} onHide={() => setShowRefundModal(false)}>
+        <Modal.Header closeButton><Modal.Title>Demande de remboursement</Modal.Title></Modal.Header>
+        <Modal.Body>
+          {selectedOrderForRefund && (
+            <>
+              <Alert variant="info">
+                <strong>Politique de remboursement :</strong><br />
+                L'entreprise ne rembourse généralement pas les clients en espèces. Lorsqu'un produit ne convient pas, plusieurs solutions peuvent être proposées :
+                <ul>
+                  <li>Remplacer l'article par un autre</li>
+                  <li>Établir un avoir (crédit) pour un futur achat</li>
+                </ul>
+              </Alert>
+              <p><strong>Commande :</strong> #{selectedOrderForRefund.id_commande}</p>
+              <p><strong>Montant total :</strong> {selectedOrderForRefund.total_xaf?.toLocaleString('fr-FR')} FCFA</p>
+              <hr />
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Type de demande</Form.Label>
+                  <Form.Control as="select" value={refundForm.type_demande} onChange={(e) => setRefundForm({ ...refundForm, type_demande: e.target.value })}>
+                    <option value="avoir">Avoir (crédit pour futur achat)</option>
+                    <option value="remplacement">Remplacement de l'article</option>
+                    <option value="remboursement">Remboursement (en espèces)</option>
+                  </Form.Control>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Raison de la demande</Form.Label>
+                  <Form.Control as="textarea" rows={3} value={refundForm.raison} onChange={(e) => setRefundForm({ ...refundForm, raison: e.target.value })} required placeholder="Veuillez indiquer la raison de votre demande..." />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Description détaillée</Form.Label>
+                  <Form.Control as="textarea" rows={3} value={refundForm.description} onChange={(e) => setRefundForm({ ...refundForm, description: e.target.value })} placeholder="Décrivez votre problème en détail..." />
+                </Form.Group>
+              </Form>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowRefundModal(false)}>Annuler</Button>
+          <Button variant="primary" onClick={handleConfirmRefund}>Envoyer la demande</Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );

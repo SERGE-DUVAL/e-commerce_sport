@@ -1,8 +1,29 @@
 const { Promotion } = require('../models');
 const { Op } = require('sequelize');
 
+// Mettre à jour les promotions expirées automatiquement
+exports.updateExpiredPromotions = async () => {
+  try {
+    const now = new Date();
+    await Promotion.update(
+      { est_active: false },
+      {
+        where: {
+          est_active: true,
+          date_expiration: { [Op.lt]: now }
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des promotions expirées:', error);
+  }
+};
+
 exports.validatePromotion = async (req, res) => {
   try {
+    // Mettre à jour les promotions expirées avant de valider
+    await exports.updateExpiredPromotions();
+
     const { code } = req.body;
 
     const promotion = await Promotion.findOne({

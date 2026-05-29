@@ -16,6 +16,43 @@ exports.createInventaire = async (req, res) => {
       notes
     });
 
+    // Si inventaire général, ajouter tous les produits automatiquement
+    if (type_inventaire === 'général') {
+      const produits = await Produit.findAll();
+      for (const produit of produits) {
+        await LigneInventaire.create({
+          id_inventaire: inventaire.id_inventaire,
+          id_produit: produit.id_produit,
+          quantite_theorique: produit.stock,
+          quantite_physique: 0,
+          ecart: -produit.stock,
+          methode_comptage: 'automatique',
+          notes: 'À compter'
+        });
+      }
+      await updateInventaireTotals(inventaire.id_inventaire);
+    } 
+    // Si inventaire partiel pour une zone, ajouter les produits de cette zone
+    else if (type_inventaire === 'partiel' && zone) {
+      const { ZoneStockage } = require('../models');
+      const zoneStockage = await ZoneStockage.findOne({ where: { nom: zone } });
+      if (zoneStockage) {
+        const produits = await zoneStockage.getProduits();
+        for (const produit of produits) {
+          await LigneInventaire.create({
+            id_inventaire: inventaire.id_inventaire,
+            id_produit: produit.id_produit,
+            quantite_theorique: produit.stock,
+            quantite_physique: 0,
+            ecart: -produit.stock,
+            methode_comptage: 'automatique',
+            notes: `Zone: ${zone}`
+          });
+        }
+        await updateInventaireTotals(inventaire.id_inventaire);
+      }
+    }
+
     res.status(201).json(inventaire);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
@@ -51,6 +88,20 @@ exports.getInventaireById = async (req, res) => {
     }
 
     res.json(inventaire);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
+// Récupérer les lignes d'un inventaire
+exports.getLignesByInventaire = async (req, res) => {
+  try {
+    const lignes = await LigneInventaire.findAll({
+      where: { id_inventaire: req.params.id },
+      include: [{ model: Produit, as: 'produit' }]
+    });
+
+    res.json(lignes);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -135,6 +186,15 @@ exports.validateInventaire = async (req, res) => {
 
     if (!inventaire) {
       return res.status(404).json({ message: 'Inventaire non trouvé' });
+    }
+
+    // Vérifier le taux de correspondance
+    if (inventaire.taux_correspondance < 95) {
+      return res.status(400).json({ 
+        message: 'Attention: Le taux de correspondance est inférieur à 95%. Veuillez vérifier les écarts avant de valider.',
+        taux_correspondance: inventaire.taux_correspondance,
+        avertissement: true
+      });
     }
 
     await inventaire.update({

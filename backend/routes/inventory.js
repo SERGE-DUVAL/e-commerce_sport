@@ -5,6 +5,7 @@ const {
   createInventaire,
   getAllInventaires,
   getInventaireById,
+  getLignesByInventaire,
   addLigneInventaire,
   updateLigneInventaire,
   finishInventaire,
@@ -16,6 +17,7 @@ const {
 router.post('/', protect, admin, createInventaire);
 router.get('/', protect, admin, getAllInventaires);
 router.get('/:id', protect, admin, getInventaireById);
+router.get('/:id/lignes', protect, admin, getLignesByInventaire);
 router.post('/:id/lignes', protect, admin, addLigneInventaire);
 router.put('/lignes/:id', protect, admin, updateLigneInventaire);
 router.put('/:id/finish', protect, admin, finishInventaire);

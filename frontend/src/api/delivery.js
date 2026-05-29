@@ -35,10 +35,5 @@ export const deliveryAPI = {
   updateAffectationStatus: (id, data) => api.put(`/delivery/affectations/${id}`, data),
 
   // Générer un bordereau de livraison en PDF
-  generateDeliveryNote: (id) => {
-    return {
-      url: `/api/delivery/affectations/${id}/bordereau`,
-      method: 'GET'
-    };
-  }
+  generateDeliveryNote: (id) => api.get(`/delivery/affectations/${id}/bordereau`, { responseType: 'blob' })
 };

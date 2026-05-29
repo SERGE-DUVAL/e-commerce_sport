@@ -1,6 +1,7 @@
 const Sequelize = require('sequelize');
 const sequelize = require('../config/database');
 const Utilisateur = require('./Utilisateur');
+const LigneInventaire = require('./LigneInventaire');
 
 const Inventaire = sequelize.define('Inventaire', {
   id_inventaire: {
@@ -56,5 +57,8 @@ const Inventaire = sequelize.define('Inventaire', {
 
 Inventaire.belongsTo(Utilisateur, { foreignKey: 'id_responsable', as: 'responsable_user' });
 Utilisateur.hasMany(Inventaire, { foreignKey: 'id_responsable', as: 'inventaires' });
+
+Inventaire.hasMany(LigneInventaire, { foreignKey: 'id_inventaire', as: 'lignes' });
+LigneInventaire.belongsTo(Inventaire, { foreignKey: 'id_inventaire', as: 'inventaire' });
 
 module.exports = Inventaire;
