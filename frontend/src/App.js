@@ -9,6 +9,7 @@ import Cart from './pages/Cart';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import MyAvoirs from './pages/MyAvoirs';
 import AdminDashboard from './pages/AdminDashboard';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
@@ -29,6 +30,7 @@ function App() {
                 <Route path="/connexion" element={<Login />} />
                 <Route path="/inscription" element={<Register />} />
                 <Route path="/profil" element={<Profile />} />
+                <Route path="/mes-avoirs" element={<MyAvoirs />} />
                 <Route path="/admin" element={<AdminDashboard />} />
               </Routes>
             </main>

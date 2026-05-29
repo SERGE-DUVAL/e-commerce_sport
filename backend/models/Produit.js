@@ -1,5 +1,6 @@
 const Sequelize = require('sequelize');
 const sequelize = require('../config/database');
+const LigneInventaire = require('./LigneInventaire');
 
 const Produit = sequelize.define('Produit', {
   id_produit: {
@@ -40,5 +41,8 @@ const Produit = sequelize.define('Produit', {
   tableName: 'produits',
   timestamps: true
 });
+
+Produit.hasMany(LigneInventaire, { foreignKey: 'id_produit', as: 'lignesInventaires' });
+LigneInventaire.belongsTo(Produit, { foreignKey: 'id_produit', as: 'produit' });
 
 module.exports = Produit;

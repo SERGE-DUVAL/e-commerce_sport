@@ -1,4 +1,4 @@
-const { Utilisateur, Commande, LigneCommande, Produit, Promotion } = require('../models');
+const { Utilisateur, Commande, LigneCommande, Produit, Promotion, DemandeRemboursement } = require('../models');
 const PDFDocument = require('pdfkit');
 const { Parser } = require('json2csv');
 const { Op } = require('sequelize');
@@ -6,11 +6,23 @@ const { Op } = require('sequelize');
 exports.getDashboardStats = async (req, res) => {
   try {
     const totalRevenus = await Commande.sum('total_xaf', {
-      where: { statut: 'Payée' }
+      where: { 
+        statut: ['Payée', 'Livrée']
+      }
     }) || 0;
 
+    // Calculer le total des remboursements approuvés
+    const totalRemboursements = await DemandeRemboursement.sum('montant_rembourse', {
+      where: { statut: 'approuve' }
+    }) || 0;
+
+    // Calculer les revenus nets (revenus - remboursements)
+    const revenusNets = totalRevenus - totalRemboursements;
+
     const totalCommandes = await Commande.count({
-      where: { statut: 'Payée' }
+      where: { 
+        statut: ['Payée', 'Livrée']
+      }
     });
 
     const totalClients = await Utilisateur.count({
@@ -72,7 +84,9 @@ exports.getDashboardStats = async (req, res) => {
     });
 
     res.json({
-      totalRevenus,
+      totalRevenus: revenusNets,
+      totalRevenusBruts: totalRevenus,
+      totalRemboursements,
       totalCommandes,
       totalClients,
       produitsEnStock,
@@ -134,6 +148,26 @@ exports.deleteClient = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 };
+
+exports.getUserOrders = async (req, res) => {
+  try {
+    const orders = await Commande.findAll({
+      where: { id_utilisateur: req.params.id },
+      include: [
+        {
+          model: LigneCommande,
+          as: 'LigneCommandes',
+          include: [{ model: Produit, as: 'Produit' }]
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
 exports.getAllOrders = async (req, res) => {
   try {
     const commandes = await Commande.findAll({
@@ -170,11 +204,16 @@ exports.updateOrderStatus = async (req, res) => {
     const commande = await Commande.findByPk(req.params.id);
 
     if (!commande) {
-      return res.status(404).json({ message: 'Commande non trouvÃ©e' });
+      return res.status(404).json({ message: 'Commande non trouvée' });
+    }
+
+    // Empêcher les changements de statut pour les commandes livrées
+    if (commande.statut === 'Livrée') {
+      return res.status(400).json({ message: 'Impossible de modifier le statut d\'une commande déjà livrée' });
     }
 
     await commande.update({ statut });
-    res.json({ message: 'Statut mis Ã  jour', commande });
+    res.json({ message: 'Statut mis à jour', commande });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -243,11 +282,17 @@ exports.exportPDF = async (req, res) => {
 
     doc.pipe(res);
 
-    // En-tête professionnel
+    // En-tête professionnel avec logo
     doc.rect(0, 0, doc.page.width, 100).fill('#1a237e');
-    doc.fillColor('white').fontSize(28).text('Sport-Equip', 50, 35, { align: 'left' });
-    doc.fontSize(14).text('Rapport des Ventes', 50, 65, { align: 'left' });
-    doc.fontSize(12).text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, 50, 85, { align: 'left' });
+    
+    // Logo Sport-Equip (cercle avec SE)
+    doc.circle(50, 50, 30).fill('#ffffff');
+    doc.fillColor('#1a237e').fontSize(18).font('Helvetica-Bold').text('SE', 38, 42);
+    
+    doc.fillColor('white').fontSize(28).text('Sport-Equip', 100, 35, { align: 'left' });
+    doc.fontSize(14).text('Équipements Sportifs Professionnels', 100, 60, { align: 'left' });
+    doc.fontSize(12).text('Rapport des Ventes', 100, 80, { align: 'left' });
+    doc.fontSize(10).text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, 400, 40, { align: 'right' });
 
     // Statistiques récapitulatives
     doc.fillColor('black');

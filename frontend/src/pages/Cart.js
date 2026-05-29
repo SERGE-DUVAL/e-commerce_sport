@@ -334,6 +334,102 @@ const Cart = () => {
                   </Form.Group>
                 )}
 
+                {moyenPaiement === 'PayPal' && (
+                  <>
+                    <Form.Group className="mb-3 payment-simulator">
+                      <Form.Label>Email PayPal:</Form.Label>
+                      <Form.Control
+                        type="email"
+                        value={codeMarchand}
+                        onChange={(e) => setCodeMarchand(e.target.value)}
+                        placeholder="votre-email@paypal.com"
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3 payment-simulator">
+                      <Form.Label>Nom du compte PayPal:</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Nom du titulaire du compte"
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3 payment-simulator">
+                      <Form.Label>Numéro de téléphone associé:</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="+237 6XX XXX XXX"
+                      />
+                    </Form.Group>
+                  </>
+                )}
+
+                {moyenPaiement === 'Chèque' && (
+                  <>
+                    <Form.Group className="mb-3 payment-simulator">
+                      <Form.Label>Numéro de chèque:</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={codeMarchand}
+                        onChange={(e) => setCodeMarchand(e.target.value)}
+                        placeholder="Ex: CHQ-123456789"
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3 payment-simulator">
+                      <Form.Label>Banque émettrice:</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Ex: Société Générale"
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3 payment-simulator">
+                      <Form.Label>Montant du chèque:</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Montant en toutes lettres"
+                      />
+                    </Form.Group>
+                    <small className="text-muted">Le chèque sera simulé lors de la validation</small>
+                  </>
+                )}
+
+                {moyenPaiement === 'Carte bancaire' && (
+                  <>
+                    <Form.Group className="mb-3 payment-simulator">
+                      <Form.Label>Numéro de carte:</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={codeMarchand}
+                        onChange={(e) => setCodeMarchand(e.target.value)}
+                        placeholder="XXXX XXXX XXXX XXXX"
+                        maxLength={19}
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3 payment-simulator">
+                      <Form.Label>Nom du titulaire:</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="NOM PRÉNOM"
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3 payment-simulator">
+                      <Form.Label>Date d'expiration:</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="MM/AA"
+                        maxLength={5}
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3 payment-simulator">
+                      <Form.Label>CVV:</Form.Label>
+                      <Form.Control
+                        type="password"
+                        placeholder="XXX"
+                        maxLength={3}
+                      />
+                    </Form.Group>
+                    <small className="text-muted">Les informations seront cryptées dans la base de données</small>
+                  </>
+                )}
+
                 <Card className="cart-recommendations mb-3">
                   <Card.Body>
                     <h6>Suggestions selon vos commandes</h6>
@@ -391,14 +487,20 @@ const Cart = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {orderData.LigneCommandes?.map((ligne) => (
-                      <tr key={ligne.id_ligne_commande}>
-                        <td>{ligne.Produit?.titre || '-'}</td>
-                        <td>{ligne.quantite}</td>
-                        <td>{formatPrice(ligne.prix_unitaire)} FCFA</td>
-                        <td>{formatPrice(ligne.quantite * ligne.prix_unitaire)} FCFA</td>
+                    {orderData.LigneCommandes && orderData.LigneCommandes.length > 0 ? (
+                      orderData.LigneCommandes.map((ligne) => (
+                        <tr key={ligne.id_ligne_commande}>
+                          <td>{ligne.Produit?.titre || 'Produit inconnu'}</td>
+                          <td>{ligne.quantite}</td>
+                          <td>{formatPrice(ligne.prix_unitaire)} FCFA</td>
+                          <td>{formatPrice(ligne.quantite * ligne.prix_unitaire)} FCFA</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="text-center">Aucun produit dans cette commande</td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                   <tfoot>
                     <tr>

@@ -87,6 +87,11 @@ exports.openCaisse = async (req, res) => {
     if (!caisse) {
       return res.status(404).json({ message: 'Caisse non trouvée' });
     }
+
+    if (caisse.statut === 'ouverte') {
+      return res.status(400).json({ message: 'Cette caisse est déjà ouverte' });
+    }
+
     await caisse.update({
       statut: 'ouverte',
       date_ouverture: new Date()

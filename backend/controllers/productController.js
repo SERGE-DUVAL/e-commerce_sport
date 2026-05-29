@@ -123,6 +123,19 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ message: 'Produit non trouvé' });
     }
 
+    // Vérifier si le produit a des commandes
+    const { LigneCommande } = require('../models');
+    const lignesCommandes = await LigneCommande.findAll({
+      where: { id_produit: req.params.id }
+    });
+
+    if (lignesCommandes.length > 0) {
+      return res.status(400).json({ message: 'Impossible de supprimer ce produit car il est associé à des commandes' });
+    }
+
+    // Supprimer le code barre associé au produit
+    await CodeBarre.destroy({ where: { id_produit: req.params.id } });
+
     await produit.destroy();
     res.json({ message: 'Produit supprimé' });
   } catch (error) {
@@ -142,6 +155,21 @@ exports.assignProductToZone = async (req, res) => {
     const zone = await ZoneStockage.findByPk(id_zone);
     if (!zone) {
       return res.status(404).json({ message: 'Zone non trouvée' });
+    }
+
+    // Vérifier si la zone est active
+    if (!zone.actif) {
+      return res.status(400).json({ message: 'La zone n\'est pas active' });
+    }
+
+    // Vérifier la capacité de la zone
+    const currentProducts = await zone.getProduits();
+    if (currentProducts.length >= zone.capacite) {
+      return res.status(400).json({ 
+        message: 'Zone pleine: Capacité maximale atteinte',
+        capacite: zone.capacite,
+        produits_actuels: currentProducts.length
+      });
     }
 
     await produit.addZone(zone);
@@ -166,6 +194,35 @@ exports.getProductZones = async (req, res) => {
     }
 
     res.json(produit.zones);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
+// Organiser les produits par catégorie dans une zone
+exports.organizeProductsByCategory = async (req, res) => {
+  try {
+    const { id_zone, categorie } = req.body;
+
+    const zone = await ZoneStockage.findByPk(id_zone);
+    if (!zone) {
+      return res.status(404).json({ message: 'Zone non trouvée' });
+    }
+
+    // Récupérer les produits de la catégorie
+    const produits = await Produit.findAll({
+      where: { categorie }
+    });
+
+    // Assigner tous les produits de la catégorie à la zone
+    for (const produit of produits) {
+      await produit.addZone(zone);
+    }
+
+    res.json({ 
+      message: `${produits.length} produits de la catégorie ${categorie} organisés dans la zone ${zone.nom}`,
+      nombre_produits: produits.length
+    });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }

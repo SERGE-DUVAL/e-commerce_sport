@@ -5,6 +5,7 @@ const {
   createAvoir,
   getAllAvoirs,
   getAvoirById,
+  updateAvoir,
   useAvoir,
   cancelAvoir,
   deleteAvoir
@@ -14,6 +15,7 @@ const {
 router.post('/', protect, admin, createAvoir);
 router.get('/', protect, admin, getAllAvoirs);
 router.get('/:id', protect, admin, getAvoirById);
+router.put('/:id', protect, admin, updateAvoir);
 router.put('/:id/use', protect, admin, useAvoir);
 router.put('/:id/cancel', protect, admin, cancelAvoir);
 router.delete('/:id', protect, admin, deleteAvoir);

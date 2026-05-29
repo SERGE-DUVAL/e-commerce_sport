@@ -60,6 +60,31 @@ exports.getAvoirById = async (req, res) => {
   }
 };
 
+// Mettre à jour un avoir
+exports.updateAvoir = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { montant, motif, date_expiration, notes, statut } = req.body;
+
+    const avoir = await Avoir.findByPk(id);
+    if (!avoir) {
+      return res.status(404).json({ message: 'Avoir non trouvé' });
+    }
+
+    await avoir.update({
+      montant: montant || avoir.montant,
+      motif: motif || avoir.motif,
+      date_expiration: date_expiration || avoir.date_expiration,
+      notes: notes || avoir.notes,
+      statut: statut || avoir.statut
+    });
+
+    res.json(avoir);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
 // Utiliser un avoir
 exports.useAvoir = async (req, res) => {
   try {
@@ -70,6 +95,12 @@ exports.useAvoir = async (req, res) => {
 
     if (avoir.statut !== 'en attente') {
       return res.status(400).json({ message: 'Cet avoir a déjà été utilisé ou est expiré' });
+    }
+
+    // Vérifier si l'avoir est expiré
+    if (avoir.date_expiration && new Date(avoir.date_expiration) < new Date()) {
+      await avoir.update({ statut: 'expiré' });
+      return res.status(400).json({ message: 'Cet avoir est expiré' });
     }
 
     await avoir.update({ statut: 'utilisé' });

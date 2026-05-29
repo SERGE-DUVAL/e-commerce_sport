@@ -71,10 +71,14 @@ const AdminDashboard = () => {
   const [zones, setZones] = useState([]);
   const [caisses, setCaisses] = useState([]);
   const [avoirs, setAvoirs] = useState([]);
+  const [avoirFilter, setAvoirFilter] = useState('');
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [showInventoryModal, setShowInventoryModal] = useState(false);
   const [editingInventory, setEditingInventory] = useState(null);
+  const [showInventoryLinesModal, setShowInventoryLinesModal] = useState(false);
+  const [selectedInventoryLines, setSelectedInventoryLines] = useState([]);
+  const [inventoryLinesForm, setInventoryLinesForm] = useState({});
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [editingZone, setEditingZone] = useState(null);
   const [showCashModal, setShowCashModal] = useState(false);
@@ -83,6 +87,15 @@ const AdminDashboard = () => {
   const [editingCredit, setEditingCredit] = useState(null);
   const [showClientHistoryModal, setShowClientHistoryModal] = useState(false);
   const [selectedClientHistory, setSelectedClientHistory] = useState(null);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState('info');
+  const [showRefundApproveModal, setShowRefundApproveModal] = useState(false);
+  const [showRefundRejectModal, setShowRefundRejectModal] = useState(false);
+  const [selectedRefundForApprove, setSelectedRefundForApprove] = useState(null);
+  const [selectedRefundForReject, setSelectedRefundForReject] = useState(null);
+  const [refundApproveForm, setRefundApproveForm] = useState({ montant_rembourse: '', notes_admin: '' });
+  const [refundRejectForm, setRefundRejectForm] = useState({ notes_admin: '' });
   const [supplierForm, setSupplierForm] = useState({
     nom: '',
     contact: '',
@@ -209,21 +222,43 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  const handleApproveRefund = async (id) => {
+  const handleApproveRefund = (id) => {
+    const demande = demandesRemboursement.find(d => d.id_demande === id);
+    setSelectedRefundForApprove(demande);
+    setRefundApproveForm({ montant_rembourse: demande.commande?.total_xaf || '', notes_admin: '' });
+    setShowRefundApproveModal(true);
+  };
+
+  const handleConfirmApproveRefund = async () => {
     try {
-      const montant = prompt('Montant du remboursement (FCFA):');
-      const notes = prompt('Notes administrateur:');
-      await refundAPI.approveDemande(id, { montant_rembourse: Number(montant), notes_admin: notes });
+      await refundAPI.approveDemande(selectedRefundForApprove.id_demande, {
+        montant_rembourse: Number(refundApproveForm.montant_rembourse),
+        notes_admin: refundApproveForm.notes_admin
+      });
+      setShowRefundApproveModal(false);
+      setSelectedRefundForApprove(null);
+      setRefundApproveForm({ montant_rembourse: '', notes_admin: '' });
       loadData();
     } catch (error) {
       console.error('Erreur lors de l\'approbation:', error);
     }
   };
 
-  const handleRejectRefund = async (id) => {
+  const handleRejectRefund = (id) => {
+    const demande = demandesRemboursement.find(d => d.id_demande === id);
+    setSelectedRefundForReject(demande);
+    setRefundRejectForm({ notes_admin: '' });
+    setShowRefundRejectModal(true);
+  };
+
+  const handleConfirmRejectRefund = async () => {
     try {
-      const notes = prompt('Motif du refus:');
-      await refundAPI.rejectDemande(id, { notes_admin: notes });
+      await refundAPI.rejectDemande(selectedRefundForReject.id_demande, {
+        notes_admin: refundRejectForm.notes_admin
+      });
+      setShowRefundRejectModal(false);
+      setSelectedRefundForReject(null);
+      setRefundRejectForm({ notes_admin: '' });
       loadData();
     } catch (error) {
       console.error('Erreur lors du refus:', error);
@@ -438,6 +473,88 @@ const AdminDashboard = () => {
     }
   };
 
+  const showAlert = (message, type = 'info') => {
+    setAlertMessage(message);
+    setAlertType(type);
+    setShowAlertModal(true);
+  };
+
+  const handleAssignProductToZone = async (productId) => {
+    const activeZones = zones.filter(z => z.actif);
+    if (activeZones.length === 0) {
+      showAlert('Aucune zone active disponible. Veuillez créer et activer une zone d\'abord.', 'warning');
+      return;
+    }
+    
+    const zoneId = prompt(`Choisissez une zone (entrez l'ID):\n${activeZones.map(z => `${z.id_zone}: ${z.nom} (${z.type_zone})`).join('\n')}`);
+    if (!zoneId) return;
+    
+    const selectedZone = activeZones.find(z => z.id_zone === parseInt(zoneId));
+    if (!selectedZone) {
+      showAlert('Zone invalide', 'danger');
+      return;
+    }
+    
+    try {
+      await productAPI.assignToZone({ id_produit: productId, id_zone: selectedZone.id_zone });
+      showAlert('Produit assigné à la zone avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur lors de l\'assignation:', error);
+      showAlert('Erreur lors de l\'assignation du produit à la zone', 'danger');
+    }
+  };
+
+  const handleRemoveProductFromZone = async (productId) => {
+    const activeZones = zones.filter(z => z.actif);
+    if (activeZones.length === 0) {
+      showAlert('Aucune zone active disponible.', 'warning');
+      return;
+    }
+    
+    const zoneId = prompt(`Choisissez une zone pour retirer le produit (entrez l'ID):\n${activeZones.map(z => `${z.id_zone}: ${z.nom} (${z.type_zone})`).join('\n')}`);
+    if (!zoneId) return;
+    
+    const selectedZone = activeZones.find(z => z.id_zone === parseInt(zoneId));
+    if (!selectedZone) {
+      showAlert('Zone invalide', 'danger');
+      return;
+    }
+    
+    try {
+      await productAPI.removeFromZone({ id_produit: productId, id_zone: selectedZone.id_zone });
+      showAlert('Produit retiré de la zone avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur lors du retrait:', error);
+      showAlert('Erreur lors du retrait du produit de la zone', 'danger');
+    }
+  };
+
+  const handleAssignOrderToLivreur = async (orderId) => {
+    const activeLivreurs = livreurs.filter(l => l.statut === 'disponible');
+    if (activeLivreurs.length === 0) {
+      showAlert('Aucun livreur disponible. Veuillez créer et activer un livreur d\'abord.', 'warning');
+      return;
+    }
+    
+    const livreurId = prompt(`Choisissez un livreur (entrez l'ID):\n${activeLivreurs.map(l => `${l.id_livreur}: ${l.nom} ${l.prenom} (${l.vehicule})`).join('\n')}`);
+    if (!livreurId) return;
+    
+    const selectedLivreur = activeLivreurs.find(l => l.id_livreur === parseInt(livreurId));
+    if (!selectedLivreur) {
+      showAlert('Livreur invalide', 'danger');
+      return;
+    }
+    
+    try {
+      await deliveryAPI.assignDelivery({ id_commande: orderId, id_livreur: selectedLivreur.id_livreur });
+      showAlert('Commande affectée au livreur avec succès', 'success');
+      loadData();
+    } catch (error) {
+      console.error('Erreur lors de l\'affectation:', error);
+      showAlert('Erreur lors de l\'affectation de la commande au livreur', 'danger');
+    }
+  };
+
   const loadCaisses = async () => {
     try {
       const response = await cashAPI.getAllCash();
@@ -524,6 +641,8 @@ const AdminDashboard = () => {
     setInventoryForm({
       type_inventaire: 'général',
       zone: '',
+      responsable: '',
+      notes: '',
       date_debut: new Date().toISOString().split('T')[0]
     });
     setShowInventoryModal(true);
@@ -534,6 +653,8 @@ const AdminDashboard = () => {
     setInventoryForm({
       type_inventaire: inventory.type_inventaire,
       zone: inventory.zone || '',
+      responsable: inventory.responsable || '',
+      notes: inventory.notes || '',
       date_debut: inventory.date_debut.split('T')[0]
     });
     setShowInventoryModal(true);
@@ -562,6 +683,60 @@ const AdminDashboard = () => {
       } catch (error) {
         console.error('Erreur lors de la suppression de l\'inventaire:', error);
       }
+    }
+  };
+
+  const handleFinishInventory = async (id) => {
+    try {
+      await inventoryAPI.finishInventory(id);
+      loadInventaires();
+    } catch (error) {
+      console.error('Erreur lors de la terminaison de l\'inventaire:', error);
+    }
+  };
+
+  const handleValidateInventory = async (id) => {
+    try {
+      await inventoryAPI.validateInventory(id);
+      loadInventaires();
+    } catch (error) {
+      console.error('Erreur lors de la validation de l\'inventaire:', error);
+    }
+  };
+
+  const openInventoryLines = async (inventoryId) => {
+    try {
+      const response = await inventoryAPI.getInventoryLines(inventoryId);
+      setSelectedInventoryLines(response.data);
+      const form = {};
+      response.data.forEach(line => {
+        form[line.id_ligne] = line.quantite_physique || 0;
+      });
+      setInventoryLinesForm(form);
+      setShowInventoryLinesModal(true);
+    } catch (error) {
+      console.error('Erreur lors du chargement des lignes d\'inventaire:', error);
+    }
+  };
+
+  const handleInventoryLineChange = (lineId, value) => {
+    setInventoryLinesForm(prev => ({
+      ...prev,
+      [lineId]: parseInt(value) || 0
+    }));
+  };
+
+  const saveInventoryLines = async () => {
+    try {
+      for (const line of selectedInventoryLines) {
+        await inventoryAPI.updateInventoryLine(line.id_ligne, {
+          quantite_physique: inventoryLinesForm[line.id_ligne]
+        });
+      }
+      setShowInventoryLinesModal(false);
+      loadInventaires();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des lignes d\'inventaire:', error);
     }
   };
 
@@ -694,7 +869,8 @@ const AdminDashboard = () => {
     setCreditForm({
       numero_avoir: '',
       montant: 0,
-      id_commande: ''
+      id_commande: '',
+      statut: 'en attente'
     });
     setShowCreditModal(true);
   };
@@ -704,7 +880,8 @@ const AdminDashboard = () => {
     setCreditForm({
       numero_avoir: credit.numero_avoir,
       montant: credit.montant,
-      id_commande: credit.id_commande || ''
+      id_commande: credit.id_commande || '',
+      statut: credit.statut || 'en attente'
     });
     setShowCreditModal(true);
   };
@@ -1369,13 +1546,18 @@ const AdminDashboard = () => {
                       <td>{order.LigneCommandes?.reduce((sum, line) => sum + Number(line.quantite || 0), 0) || 0}</td>
                       <td><Badge bg={order.statut === 'Livrée' ? 'success' : order.statut === 'En livraison' ? 'info' : order.statut === 'Payée' ? 'primary' : order.statut === 'Annulée' ? 'danger' : 'warning'}>{order.statut}</Badge></td>
                       <td>
-                        <Form.Select size="sm" value={order.statut} onChange={(e) => updateOrderStatus(order.id_commande, e.target.value)}>
-                          <option value="En attente">En attente</option>
-                          <option value="Payée">Payée</option>
-                          <option value="En livraison">En livraison</option>
-                          <option value="Livrée">Livrée</option>
-                          <option value="Annulée">Annulée</option>
-                        </Form.Select>
+                        <div className="d-flex gap-1">
+                          {(order.statut === 'Payée' || order.statut === 'En livraison') && (
+                            <Button size="sm" variant="outline-success" onClick={() => handleAssignOrderToLivreur(order.id_commande)} title="Affecter à un livreur">🚚</Button>
+                          )}
+                          <Form.Select size="sm" value={order.statut} onChange={(e) => updateOrderStatus(order.id_commande, e.target.value)}>
+                            <option value="En attente">En attente</option>
+                            <option value="Payée">Payée</option>
+                            <option value="En livraison">En livraison</option>
+                            <option value="Livrée">Livrée</option>
+                            <option value="Annulée">Annulée</option>
+                          </Form.Select>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1520,6 +1702,8 @@ const AdminDashboard = () => {
                         <td><small>Tailles: {(variantes.tailles || []).join(', ') || '-'}<br />Couleurs: {(variantes.couleurs || []).join(', ') || '-'}</small></td>
                         <td className="admin-actions">
                           <Button size="sm" variant="outline-primary" onClick={() => openEditProduct(product)}><FaEdit /></Button>
+                          <Button size="sm" variant="outline-success" onClick={() => handleAssignProductToZone(product.id_produit)} title="Assigner à une zone">📍</Button>
+                          <Button size="sm" variant="outline-warning" onClick={() => handleRemoveProductFromZone(product.id_produit)} title="Retirer d'une zone">📍❌</Button>
                           <Button size="sm" variant="outline-info" onClick={() => handleGenerateBarcode(product)} title="Générer code-barres">📊</Button>
                           <Button size="sm" variant="outline-secondary" onClick={() => handleGenerateQRCode(product)} title="Générer QR code">📱</Button>
                           <Button size="sm" variant="outline-danger" onClick={() => deleteProduct(product.id_produit)}><FaTrash /></Button>
@@ -1713,7 +1897,7 @@ const AdminDashboard = () => {
                 <Table responsive hover className="admin-table">
                   <thead>
                     <tr>
-                      <th>#</th><th>Commande</th><th>Client</th><th>Type</th><th>Raison</th><th>Date demande</th><th>Statut</th><th>Actions</th>
+                      <th>#</th><th>Commande</th><th>Client</th><th>Type</th><th>Raison</th><th>Montant remboursé</th><th>Date demande</th><th>Statut</th><th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1722,8 +1906,19 @@ const AdminDashboard = () => {
                         <td>{demande.id_demande}</td>
                         <td>#{demande.commande?.id_commande}</td>
                         <td>{demande.utilisateur?.nom || '-'}</td>
-                        <td><Badge bg={demande.type_demande === 'remboursement' ? 'warning' : 'info'}>{demande.type_demande}</Badge></td>
+                        <td>
+                          <Badge bg={
+                            demande.type_demande === 'remboursement' ? 'warning' :
+                            demande.type_demande === 'avoir' ? 'info' :
+                            demande.type_demande === 'remplacement' ? 'success' : 'secondary'
+                          }>
+                            {demande.type_demande === 'remboursement' ? 'Remboursement' :
+                             demande.type_demande === 'avoir' ? 'Avoir' :
+                             demande.type_demande === 'remplacement' ? 'Remplacement' : demande.type_demande}
+                          </Badge>
+                        </td>
                         <td>{demande.raison}</td>
+                        <td>{demande.montant_rembourse ? `${demande.montant_rembourse.toLocaleString('fr-FR')} FCFA` : '-'}</td>
                         <td>{new Date(demande.date_demande).toLocaleDateString('fr-FR')}</td>
                         <td><Badge bg={demande.statut === 'approuve' ? 'success' : demande.statut === 'refuse' ? 'danger' : demande.statut === 'traite' ? 'primary' : 'warning'}>{demande.statut}</Badge></td>
                         <td>
@@ -1845,6 +2040,13 @@ const AdminDashboard = () => {
                       <td>{inventaire.taux_correspondance?.toFixed(2)}%</td>
                       <td>
                         <Button variant="outline-primary" size="sm" className="me-1" onClick={() => openEditInventory(inventaire)}><FaEdit /></Button>
+                        <Button variant="outline-secondary" size="sm" className="me-1" onClick={() => openInventoryLines(inventaire.id_inventaire)} title="Saisir les quantités physiques">📝</Button>
+                        {inventaire.statut === 'en cours' && (
+                          <>
+                            <Button variant="outline-success" size="sm" className="me-1" onClick={() => handleFinishInventory(inventaire.id_inventaire)} title="Terminer l'inventaire">✓</Button>
+                            <Button variant="outline-info" size="sm" className="me-1" onClick={() => handleValidateInventory(inventaire.id_inventaire)} title="Valider l'inventaire">✓✓</Button>
+                          </>
+                        )}
                         <Button variant="outline-danger" size="sm" onClick={() => deleteInventory(inventaire.id_inventaire)}><FaTrash /></Button>
                       </td>
                     </tr>
@@ -1932,7 +2134,16 @@ const AdminDashboard = () => {
             <Card.Body>
               <div className="admin-section-heading">
                 <h4>Gestion des avoirs</h4>
-                <Button variant="primary" onClick={openCreateCredit}><FaPlus /> Nouvel avoir</Button>
+                <div className="d-flex gap-2">
+                  <Form.Select size="sm" value={avoirFilter} onChange={(e) => setAvoirFilter(e.target.value)} style={{ maxWidth: '150px' }}>
+                    <option value="">Tous les statuts</option>
+                    <option value="en attente">En attente</option>
+                    <option value="actif">Actif</option>
+                    <option value="utilisé">Utilisé</option>
+                    <option value="expiré">Expiré</option>
+                  </Form.Select>
+                  <Button variant="primary" onClick={openCreateCredit}><FaPlus /> Nouvel avoir</Button>
+                </div>
               </div>
               <Table responsive hover className="admin-table">
                 <thead>
@@ -1941,7 +2152,7 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {avoirs.map((avoir) => (
+                  {avoirs.filter(a => !avoirFilter || a.statut === avoirFilter).map((avoir) => (
                     <tr key={avoir.id_avoir}>
                       <td>{avoir.id_avoir}</td>
                       <td><strong>{avoir.numero_avoir}</strong></td>
@@ -2168,10 +2379,48 @@ const AdminDashboard = () => {
           <Form onSubmit={submitInventory}>
             <Form.Group className="mb-3"><Form.Label>Type d'inventaire</Form.Label><Form.Select value={inventoryForm.type_inventaire} onChange={(e) => setInventoryForm({ ...inventoryForm, type_inventaire: e.target.value })} required><option value="général">Général</option><option value="partiel">Partiel</option></Form.Select></Form.Group>
             <Form.Group className="mb-3"><Form.Label>Zone</Form.Label><Form.Select value={inventoryForm.zone} onChange={(e) => setInventoryForm({ ...inventoryForm, zone: e.target.value })}><option value="">Toutes les zones</option><option value="surface de vente">Surface de vente</option><option value="mezzanine">Mezzanine</option><option value="entrepôt">Entrepôt</option></Form.Select></Form.Group>
+            <Form.Group className="mb-3"><Form.Label>Responsable</Form.Label><Form.Control type="text" value={inventoryForm.responsable} onChange={(e) => setInventoryForm({ ...inventoryForm, responsable: e.target.value })} /></Form.Group>
+            <Form.Group className="mb-3"><Form.Label>Notes</Form.Label><Form.Control as="textarea" rows={2} value={inventoryForm.notes} onChange={(e) => setInventoryForm({ ...inventoryForm, notes: e.target.value })} /></Form.Group>
             <Form.Group className="mb-3"><Form.Label>Date de début</Form.Label><Form.Control type="date" value={inventoryForm.date_debut} onChange={(e) => setInventoryForm({ ...inventoryForm, date_debut: e.target.value })} required /></Form.Group>
             <Button variant="primary" type="submit">{editingInventory ? 'Modifier' : 'Créer'}</Button>
           </Form>
         </Modal.Body>
+      </Modal>
+      <Modal show={showInventoryLinesModal} onHide={() => setShowInventoryLinesModal(false)} size="lg">
+        <Modal.Header closeButton><Modal.Title>Saisir les quantités physiques</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Table responsive hover>
+            <thead>
+              <tr>
+                <th>Produit</th>
+                <th>Quantité théorique</th>
+                <th>Quantité physique</th>
+                <th>Écart</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedInventoryLines.map((line) => (
+                <tr key={line.id_ligne}>
+                  <td>{line.produit?.titre || 'N/A'}</td>
+                  <td>{line.quantite_theorique}</td>
+                  <td>
+                    <Form.Control
+                      type="number"
+                      value={inventoryLinesForm[line.id_ligne] || 0}
+                      onChange={(e) => handleInventoryLineChange(line.id_ligne, e.target.value)}
+                      min="0"
+                    />
+                  </td>
+                  <td>{(inventoryLinesForm[line.id_ligne] || 0) - line.quantite_theorique}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowInventoryLinesModal(false)}>Annuler</Button>
+          <Button variant="primary" onClick={saveInventoryLines}>Sauvegarder</Button>
+        </Modal.Footer>
       </Modal>
       <Modal show={showZoneModal} onHide={() => setShowZoneModal(false)}>
         <Modal.Header closeButton><Modal.Title>{editingZone ? 'Modifier la zone' : 'Nouvelle zone'}</Modal.Title></Modal.Header>
@@ -2203,6 +2452,7 @@ const AdminDashboard = () => {
             <Form.Group className="mb-3"><Form.Label>Numéro d'avoir</Form.Label><Form.Control value={creditForm.numero_avoir} onChange={(e) => setCreditForm({ ...creditForm, numero_avoir: e.target.value })} required /></Form.Group>
             <Form.Group className="mb-3"><Form.Label>Montant (FCFA)</Form.Label><Form.Control type="number" value={creditForm.montant} onChange={(e) => setCreditForm({ ...creditForm, montant: Number(e.target.value) })} required /></Form.Group>
             <Form.Group className="mb-3"><Form.Label>Commande associée</Form.Label><Form.Select value={creditForm.id_commande} onChange={(e) => setCreditForm({ ...creditForm, id_commande: e.target.value })}><option value="">Aucune commande</option>{orders.map((order) => <option key={order.id_commande} value={order.id_commande}>Commande #{order.id_commande}</option>)}</Form.Select></Form.Group>
+            <Form.Group className="mb-3"><Form.Label>Statut</Form.Label><Form.Select value={creditForm.statut} onChange={(e) => setCreditForm({ ...creditForm, statut: e.target.value })}><option value="en attente">En attente</option><option value="actif">Actif</option><option value="utilisé">Utilisé</option><option value="expiré">Expiré</option></Form.Select></Form.Group>
             <Button variant="primary" type="submit">{editingCredit ? 'Modifier' : 'Créer'}</Button>
           </Form>
         </Modal.Body>
@@ -2249,6 +2499,73 @@ const AdminDashboard = () => {
             </>
           )}
         </Modal.Body>
+      </Modal>
+      <Modal show={showRefundApproveModal} onHide={() => setShowRefundApproveModal(false)}>
+        <Modal.Header closeButton><Modal.Title>Approuver le remboursement</Modal.Title></Modal.Header>
+        <Modal.Body>
+          {selectedRefundForApprove && (
+            <>
+              <p><strong>Commande:</strong> #{selectedRefundForApprove.commande?.id_commande}</p>
+              <p><strong>Client:</strong> {selectedRefundForApprove.utilisateur?.nom}</p>
+              <p><strong>Raison:</strong> {selectedRefundForApprove.raison}</p>
+              <p><strong>Montant total de la commande:</strong> {selectedRefundForApprove.commande?.total_xaf?.toLocaleString('fr-FR')} FCFA</p>
+              <hr />
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Montant à rembourser (FCFA)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={refundApproveForm.montant_rembourse}
+                    onChange={(e) => setRefundApproveForm({ ...refundApproveForm, montant_rembourse: e.target.value })}
+                    required
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Notes administrateur</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={refundApproveForm.notes_admin}
+                    onChange={(e) => setRefundApproveForm({ ...refundApproveForm, notes_admin: e.target.value })}
+                  />
+                </Form.Group>
+              </Form>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowRefundApproveModal(false)}>Annuler</Button>
+          <Button variant="success" onClick={handleConfirmApproveRefund}>Approuver</Button>
+        </Modal.Footer>
+      </Modal>
+      <Modal show={showRefundRejectModal} onHide={() => setShowRefundRejectModal(false)}>
+        <Modal.Header closeButton><Modal.Title>Refuser le remboursement</Modal.Title></Modal.Header>
+        <Modal.Body>
+          {selectedRefundForReject && (
+            <>
+              <p><strong>Commande:</strong> #{selectedRefundForReject.commande?.id_commande}</p>
+              <p><strong>Client:</strong> {selectedRefundForReject.utilisateur?.nom}</p>
+              <p><strong>Raison:</strong> {selectedRefundForReject.raison}</p>
+              <hr />
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Motif du refus</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={refundRejectForm.notes_admin}
+                    onChange={(e) => setRefundRejectForm({ ...refundRejectForm, notes_admin: e.target.value })}
+                    required
+                  />
+                </Form.Group>
+              </Form>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowRefundRejectModal(false)}>Annuler</Button>
+          <Button variant="danger" onClick={handleConfirmRejectRefund}>Refuser</Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );

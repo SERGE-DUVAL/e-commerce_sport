@@ -29,6 +29,7 @@ app.use('/api/suppliers', require('./routes/suppliers'));
 app.use('/api/credits', require('./routes/credits'));
 app.use('/api/zones', require('./routes/zones'));
 app.use('/api/cash', require('./routes/cash'));
+app.use('/api/supply', require('./routes/supply'));
 
 // Sync database
 const db = require('./config/database');
@@ -70,6 +71,24 @@ db.sync({ force: false })
     } catch (err) {
       if (!err.message.includes('duplicate column name')) {
         console.error('Erreur ajout id_commande:', err.message);
+      }
+    }
+
+    try {
+      await db.query('ALTER TABLE lignes_inventaires ADD COLUMN id_inventaire INTEGER');
+      console.log('Colonne id_inventaire ajoutée à lignes_inventaires');
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
+        console.error('Erreur ajout id_inventaire:', err.message);
+      }
+    }
+
+    try {
+      await db.query('ALTER TABLE lignes_inventaires ADD COLUMN id_produit INTEGER');
+      console.log('Colonne id_produit ajoutée à lignes_inventaires');
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
+        console.error('Erreur ajout id_produit:', err.message);
       }
     }
   })

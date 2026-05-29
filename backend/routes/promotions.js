@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { validatePromotion } = require('../controllers/promotionController');
-const { protect, admin } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
-router.post('/validate', protect, admin, validatePromotion);
+router.post('/validate', protect, validatePromotion);
 
 module.exports = router;

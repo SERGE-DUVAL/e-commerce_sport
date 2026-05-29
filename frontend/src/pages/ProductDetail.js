@@ -7,6 +7,8 @@ import { productAPI, reviewAPI } from '../services/api';
 import StarRating from '../components/StarRating';
 import { getProductImage } from '../utils/productImages';
 
+const { Body: CardBody } = Card;
+
 const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
@@ -186,6 +188,17 @@ const ProductDetail = () => {
           >
             {product.stock > 0 ? 'Ajouter au panier' : 'Rupture de stock'}
           </Button>
+
+          <Card className="mt-4">
+            <CardBody>
+              <h5>Code barre du produit</h5>
+              <div className="text-center mt-3">
+                <div style={{ fontFamily: 'monospace', fontSize: '24px', letterSpacing: '2px', padding: '10px', border: '2px solid #000', display: 'inline-block' }}>
+                  SE-{product.id_produit}
+                </div>
+              </div>
+            </CardBody>
+          </Card>
         </Col>
       </Row>
 
@@ -200,13 +213,13 @@ const ProductDetail = () => {
               ) : (
                 reviews.map((avis) => (
                   <Card key={avis.id_avis} className="mb-3">
-                    <Card.Body>
+                    <CardBody>
                       <div className="d-flex justify-content-between">
                         <strong>{avis.Utilisateur?.nom || 'Anonyme'}</strong>
                         <StarRating rating={avis.note} />
                       </div>
                       <Card.Text className="mt-2">{avis.commentaire}</Card.Text>
-                    </Card.Body>
+                    </CardBody>
                   </Card>
                 ))
               )}
