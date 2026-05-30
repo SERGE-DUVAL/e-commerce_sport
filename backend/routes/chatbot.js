@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { chat } = require('../controllers/chatbotController');
-const { protect } = require('../middleware/auth');
+// const { protect } = require('../middleware/auth');
 
-router.post('/chat', protect, chat);
+// Désactivé temporairement pour permettre le test sans connexion
+router.post('/chat', chat);
 
 module.exports = router;
