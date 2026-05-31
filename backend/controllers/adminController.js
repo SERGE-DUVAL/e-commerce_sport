@@ -227,7 +227,9 @@ exports.deletePromotion = async (req, res) => {
 exports.exportPDF = async (req, res) => {
   try {
     const commandes = await Commande.findAll({
-      where: { statut: 'Payée' },
+      where: { 
+        statut: ['Payée', 'Livrée']
+      },
       include: [
         { model: Utilisateur, as: 'Utilisateur', attributes: ['nom', 'email'] },
         { model: LigneCommande, as: 'LigneCommandes', include: [{ model: Produit, as: 'Produit' }] }

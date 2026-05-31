@@ -7,11 +7,19 @@
 body {
   font-family: 'Segoe UI', 'Poppins', 'Inter', Tahoma, Geneva, Verdana, sans-serif;
   background: #07111f;
-  color: #ffffff;
+  color: #e0e0e0;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* =========================================
+   Theme baseline (avoid global !important conflicts)
+   ========================================= */
+/* Do NOT globally force colors for huge sets (cards/forms/etc).
+   That causes "black on black" / "white on white" depending on
+   which section (dark vs light) wins in CSS cascade. */
+
 
 /* Global Animations */
 @keyframes fadeInUp {
@@ -346,10 +354,38 @@ html {
 
 .product-card .card-footer {
   background: linear-gradient(180deg, #ffffff, #f5f9ff) !important;
+  color: #102033 !important;
+}
+
+.product-card .card-title,
+.product-card .card-text,
+.product-card .card-subtitle {
+  color: #102033 !important;
+}
+
+.product-card .btn {
+  color: #ffffff !important;
 }
 
 .admin-page {
   color: #102033;
+  background: linear-gradient(180deg, #ffffff, #f5f9ff) !important;
+}
+
+.admin-page h1,
+.admin-page h2,
+.admin-page h3,
+.admin-page h4,
+.admin-page h5,
+.admin-page h6 {
+  color: #102033 !important;
+}
+
+.admin-page p,
+.admin-page span,
+.admin-page td,
+.admin-page th {
+  color: #102033 !important;
 }
 
 .admin-hero {
@@ -541,124 +577,7 @@ html {
   color: #ffc107;
 }
 
-.chatbot-container {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  z-index: 9999;
-}
-
-.chatbot-toggle {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #61f4c4, #4facfe);
-  border: none;
-  box-shadow: 0 8px 32px rgba(97, 244, 196, 0.4);
-  cursor: pointer;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.chatbot-toggle:hover {
-  transform: scale(1.1);
-  box-shadow: 0 12px 40px rgba(97, 244, 196, 0.6);
-}
-
-.chatbot-toggle svg {
-  font-size: 1.5rem;
-  color: #07111f;
-}
-
-.chatbot-window {
-  position: fixed;
-  bottom: 100px;
-  right: 30px;
-  width: 380px;
-  max-height: 550px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  display: none;
-  flex-direction: column;
-  z-index: 9999;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  overflow: hidden;
-}
-
-.chatbot-window.active {
-  display: flex;
-  animation: scaleIn 0.3s ease-out;
-}
-
-.chatbot-window .card-header {
-  background: linear-gradient(135deg, #61f4c4, #4facfe);
-  border: none;
-  padding: 16px 20px;
-  font-weight: 700;
-  color: #07111f;
-}
-
-.chatbot-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  max-height: 380px;
-  background: rgba(255, 255, 255, 0.5);
-}
-
-.chatbot-messages::-webkit-scrollbar {
-  width: 6px;
-}
-
-.chatbot-messages::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 3px;
-}
-
-.chatbot-messages::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #61f4c4, #4facfe);
-  border-radius: 3px;
-}
-
-.chatbot-input {
-  padding: 16px 20px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.chatbot-input .form-control {
-  border-radius: 25px;
-  border: 2px solid rgba(97, 244, 196, 0.3);
-  padding: 12px 20px;
-  transition: all 0.3s ease;
-}
-
-.chatbot-input .form-control:focus {
-  border-color: #61f4c4;
-  box-shadow: 0 0 0 3px rgba(97, 244, 196, 0.1);
-}
-
-.chatbot-input .btn {
-  border-radius: 25px;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, #61f4c4, #4facfe);
-  border: none;
-  transition: all 0.3s ease;
-}
-
-.chatbot-input .btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 15px rgba(97, 244, 196, 0.4);
-}
+/* Chatbot styles moved to Chatbot.css to avoid conflicts */
 
 /* Mode sombre pour le dashboard admin */
 .admin-dark-mode {
@@ -817,30 +736,1156 @@ html {
   color: #e0e0e0 !important;
 }
 
-.admin-dark-mode .form-check-input {
-  background-color: #1a1a2e !important;
-  border-color: #0f3460 !important;
+/* Responsive Design Improvements */
+@media (max-width: 1200px) {
+  .hero-pro {
+    min-height: 80vh;
+    padding: 70px 0;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(2.2rem, 5vw, 4rem);
+  }
+
+  .admin-hero {
+    padding: 28px;
+  }
+
+  .admin-hero h1 {
+    font-size: clamp(1.8rem, 3.5vw, 3rem);
+  }
 }
 
-.admin-dark-mode .pagination .page-link {
-  background-color: #16213e !important;
-  color: #e0e0e0 !important;
-  border-color: #0f3460 !important;
+@media (max-width: 992px) {
+  .navbar-pro .nav-link {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .nav-cta {
+    padding-inline: 14px !important;
+    font-size: 0.9rem;
+  }
+
+  .hero-pro {
+    min-height: 75vh;
+    padding: 60px 0;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+  }
+
+  .hero-copy p {
+    font-size: 1rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-actions .btn {
+    width: 100%;
+  }
+
+  .product-card {
+    margin-bottom: 20px;
+  }
+
+  .admin-hero,
+  .admin-section-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-hero-actions {
+    justify-content: flex-start;
+    margin-top: 16px;
+  }
+
+  .admin-stat-card .card-body {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .profile-page,
+  .cart-page {
+    padding: 30px 0;
+  }
+
+  .cart-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+
+  .cart-item-image {
+    width: 80px;
+    height: 80px;
+  }
+
+  .cart-item-quantity {
+    justify-content: center;
+  }
+
+  .cart-item-remove {
+    margin-top: 10px;
+  }
 }
 
-.admin-dark-mode .pagination .page-item.active .page-link {
-  background-color: #0f3460 !important;
-  border-color: #0f3460 !important;
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  .navbar-brand {
+    font-size: 1.3rem;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    margin-right: 8px;
+  }
+
+  .role-pill {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    margin-right: 8px;
+  }
+
+  .hero-pro {
+    min-height: 70vh;
+    padding: 50px 0;
+  }
+
+  .hero-glow {
+    width: 280px;
+    height: 280px;
+  }
+
+  .hero-glow-one {
+    left: -60px;
+    top: 60px;
+  }
+
+  .hero-glow-two {
+    right: -80px;
+    bottom: 30px;
+  }
+
+  .eyebrow {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    margin-bottom: 16px;
+  }
+
+  .hero-copy p {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .hero-actions {
+    margin: 24px 0;
+    gap: 10px;
+  }
+
+  .btn-neon {
+    padding: 10px 20px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .product-card {
+    margin-bottom: 16px;
+  }
+
+  .product-card:hover {
+    transform: translateY(-8px);
+  }
+
+  .admin-hero {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .admin-hero h1 {
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+  }
+
+  .admin-hero p {
+    font-size: 0.95rem;
+  }
+
+  .admin-stat-card {
+    margin-bottom: 16px;
+  }
+
+  .admin-stat-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+
+  .admin-stat-card h3 {
+    font-size: 1.3rem;
+  }
+
+  .admin-stat-card p {
+    font-size: 0.85rem;
+  }
+
+  .admin-panel {
+    border-radius: 20px;
+  }
+
+  .admin-tabs .nav-link {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+
+  .admin-section-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .admin-section-heading h4 {
+    font-size: 1.2rem;
+  }
+
+  .admin-actions {
+    width: 100%;
+  }
+
+  .admin-table {
+    font-size: 0.85rem;
+  }
+
+  .admin-table thead th,
+  .admin-table tbody td {
+    padding: 8px;
+  }
+
+  .admin-sales-chart {
+    min-height: 180px;
+    padding: 15px 4px 4px;
+  }
+
+  .admin-sales-column {
+    min-width: 28px;
+  }
+
+  .admin-sales-column span {
+    width: 18px;
+  }
+
+  .admin-sales-column small {
+    font-size: 0.7rem;
+  }
+
+  .admin-bar-row {
+    grid-template-columns: 100px 1fr 36px;
+    gap: 8px;
+  }
+
+  .admin-bar-label {
+    font-size: 0.8rem;
+  }
+
+  .admin-bar-track {
+    height: 12px;
+  }
+
+  .profile-page,
+  .cart-page {
+    padding: 20px 0;
+  }
+
+  .profile-card,
+  .cart-card {
+    border-radius: 16px;
+    margin-bottom: 16px;
+  }
+
+  .profile-section-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .profile-section-header h4 {
+    font-size: 1.1rem;
+  }
+
+  .orders-table {
+    font-size: 0.85rem;
+  }
+
+  .orders-table thead th,
+  .orders-table tbody td {
+    padding: 8px;
+  }
+
+  .order-status {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+  }
+
+  .action-btn {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
+
+  .points-amount {
+    font-size: 2rem;
+  }
+
+  .points-label,
+  .value-label {
+    font-size: 0.85rem;
+  }
+
+  .profile-btn {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+
+  .cart-item {
+    padding: 15px;
+  }
+
+  .cart-item-image {
+    width: 70px;
+    height: 70px;
+  }
+
+  .cart-item-title {
+    font-size: 1rem;
+  }
+
+  .cart-item-price {
+    font-size: 1.1rem;
+  }
+
+  .quantity-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+
+  .quantity-value {
+    font-size: 1rem;
+    min-width: 36px;
+  }
+
+  .cart-item-total {
+    font-size: 1.2rem;
+  }
+
+  .cart-item-remove {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+
+  .cart-summary {
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .cart-summary h4 {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .summary-row {
+    padding: 10px 0;
+  }
+
+  .summary-label,
+  .summary-value {
+    font-size: 0.9rem;
+  }
+
+  .summary-total {
+    font-size: 1.3rem;
+  }
+
+  .cart-form .form-label {
+    font-size: 0.9rem;
+  }
+
+  .cart-form .form-control,
+  .cart-form .form-select {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+
+  .empty-cart-icon {
+    font-size: 4rem;
+  }
+
+  .empty-cart h3 {
+    font-size: 1.3rem;
+  }
+
+  .empty-cart p {
+    font-size: 0.95rem;
+  }
+
+  .btn-primary {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
 }
 
-.admin-dark-mode .pagination .page-link:hover {
-  background-color: #1a1a2e !important;
-  color: #e0e0e0 !important;
+@media (max-width: 576px) {
+  .navbar-brand {
+    font-size: 1.1rem;
+  }
+
+  .brand-mark {
+    width: 32px;
+    height: 32px;
+    margin-right: 6px;
+    font-size: 0.9rem;
+  }
+
+  .role-pill {
+    font-size: 0.7rem;
+    padding: 5px 10px;
+    margin-right: 6px;
+  }
+
+  .nav-cta {
+    padding-inline: 10px !important;
+    font-size: 0.8rem;
+  }
+
+  .hero-pro {
+    min-height: 65vh;
+    padding: 40px 0;
+  }
+
+  .hero-glow {
+    width: 220px;
+    height: 220px;
+  }
+
+  .hero-glow-one {
+    left: -40px;
+    top: 40px;
+  }
+
+  .hero-glow-two {
+    right: -60px;
+    bottom: 20px;
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    margin-bottom: 16px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+    margin-bottom: 14px;
+  }
+
+  .hero-copy p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .hero-actions {
+    margin: 20px 0;
+    gap: 8px;
+  }
+
+  .btn-neon {
+    padding: 8px 16px !important;
+    font-size: 0.85rem !important;
+  }
+
+  .product-card {
+    border-radius: 16px;
+    margin-bottom: 12px;
+  }
+
+  .admin-hero {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .admin-hero h1 {
+    font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+  }
+
+  .admin-hero p {
+    font-size: 0.9rem;
+  }
+
+  .admin-stat-card {
+    border-radius: 16px;
+    margin-bottom: 12px;
+  }
+
+  .admin-stat-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+  }
+
+  .admin-stat-card h3 {
+    font-size: 1.1rem;
+  }
+
+  .admin-stat-card p {
+    font-size: 0.8rem;
+  }
+
+  .admin-panel {
+    border-radius: 16px;
+  }
+
+  .admin-tabs .nav-link {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .admin-section-heading h4 {
+    font-size: 1.1rem;
+  }
+
+  .admin-table {
+    font-size: 0.8rem;
+  }
+
+  .admin-table thead th,
+  .admin-table tbody td {
+    padding: 6px;
+  }
+
+  .admin-sales-chart {
+    min-height: 150px;
+    padding: 12px 2px 2px;
+  }
+
+  .admin-sales-column {
+    min-width: 24px;
+  }
+
+  .admin-sales-column span {
+    width: 16px;
+  }
+
+  .admin-sales-column small {
+    font-size: 0.65rem;
+  }
+
+  .admin-bar-row {
+    grid-template-columns: 80px 1fr 30px;
+    gap: 6px;
+  }
+
+  .admin-bar-label {
+    font-size: 0.75rem;
+  }
+
+  .admin-bar-track {
+    height: 10px;
+  }
+
+  .profile-page,
+  .cart-page {
+    padding: 16px 0;
+  }
+
+  .profile-card,
+  .cart-card {
+    border-radius: 14px;
+    margin-bottom: 12px;
+    padding: 16px;
+  }
+
+  .profile-section-header {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+  }
+
+  .profile-section-header h4 {
+    font-size: 1rem;
+  }
+
+  .orders-table {
+    font-size: 0.8rem;
+  }
+
+  .orders-table thead th,
+  .orders-table tbody td {
+    padding: 6px;
+  }
+
+  .order-status {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+
+  .action-btn {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+
+  .points-amount {
+    font-size: 1.8rem;
+  }
+
+  .points-label,
+  .value-label {
+    font-size: 0.8rem;
+  }
+
+  .profile-btn {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+
+  .cart-item {
+    padding: 12px;
+  }
+
+  .cart-item-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .cart-item-title {
+    font-size: 0.95rem;
+  }
+
+  .cart-item-price {
+    font-size: 1rem;
+  }
+
+  .quantity-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
+
+  .quantity-value {
+    font-size: 0.95rem;
+    min-width: 32px;
+  }
+
+  .cart-item-total {
+    font-size: 1.1rem;
+  }
+
+  .cart-item-remove {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+  }
+
+  .cart-summary {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .cart-summary h4 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+  }
+
+  .summary-row {
+    padding: 8px 0;
+  }
+
+  .summary-label,
+  .summary-value {
+    font-size: 0.85rem;
+  }
+
+  .summary-total {
+    font-size: 1.2rem;
+  }
+
+  .cart-form .form-label {
+    font-size: 0.85rem;
+  }
+
+  .cart-form .form-control,
+  .cart-form .form-select {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .empty-cart-icon {
+    font-size: 3.5rem;
+  }
+
+  .empty-cart h3 {
+    font-size: 1.2rem;
+  }
+
+  .empty-cart p {
+    font-size: 0.9rem;
+  }
+
+  .btn-primary {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
 }
 
-.chatbot-input {
-  padding: 10px;
-  border-top: 1px solid #dee2e6;
+/* Text Color Improvements */
+.text-primary {
+  color: #61f4c4 !important;
+}
+
+.text-secondary {
+  color: #4facfe !important;
+}
+
+.text-muted {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.admin-page .text-muted {
+  color: #64748b !important;
+}
+
+.modal-body {
+  color: #1e293b !important;
+}
+
+.modal-body p {
+  color: #1e293b !important;
+}
+
+.modal-body strong {
+  color: #0f172a !important;
+}
+
+.form-control {
+  color: #1e293b !important;
+}
+
+.form-control::placeholder {
+  color: #94a3b8 !important;
+}
+
+.form-control:focus {
+  color: #1e293b !important;
+}
+
+.text-light {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.text-dark {
+  color: #07111f !important;
+}
+
+.text-white {
+  color: #ffffff !important;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #61f4c4, #4facfe);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Ensure readable text on dark backgrounds only.
+   Some cards/sections are intentionally light (chatbot bg-light, ticket modal, weather cards).
+   So we avoid forcing white text for every .card globally. */
+.card {
+  /* leave color to component styles */
+}
+
+/* Form inputs text color */
+.form-control,
+.form-select {
+  color: #ffffff;
+}
+
+
+/* Form inputs text color */
+.form-control,
+.form-select {
+  color: #ffffff;
+}
+
+.form-control::placeholder,
+.form-select::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-control:focus,
+.form-select:focus {
+  color: #ffffff;
+}
+
+/* Table text colors */
+.table {
+  color: #ffffff;
+}
+
+.table thead th {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.table tbody td {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.table tbody tr:hover td {
+  color: #ffffff;
+}
+
+/* Modal text colors */
+.modal-content {
+  color: #ffffff;
+}
+
+.modal-header,
+.modal-footer {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-title {
+  color: #ffffff;
+}
+
+/* Alert text colors */
+.alert {
+  color: #ffffff;
+}
+
+.alert h4,
+.alert h5 {
+  color: #ffffff;
+}
+
+/* Link text colors */
+a {
+  color: #61f4c4;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #4facfe;
+}
+
+/* Button text colors */
+.btn {
+  color: #ffffff;
+}
+
+.btn-outline-light {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-outline-light:hover {
+  color: #07111f;
+  background-color: #ffffff;
+}
+
+/* Badge text colors */
+.badge {
+  color: #ffffff;
+}
+
+/* Dropdown text colors */
+.dropdown-menu {
+  background-color: rgba(7, 17, 31, 0.98);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-item {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.dropdown-item:hover {
+  background-color: rgba(97, 244, 196, 0.1);
+  color: #61f4c4;
+}
+
+/* Pagination text colors */
+.pagination .page-link {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.pagination .page-link:hover {
+  background-color: rgba(97, 244, 196, 0.2);
+  border-color: rgba(97, 244, 196, 0.3);
+  color: #61f4c4;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #61f4c4;
+  border-color: #61f4c4;
+  color: #07111f;
+}
+
+/* Breadcrumb text colors */
+.breadcrumb {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.breadcrumb-item a {
+  color: #61f4c4;
+}
+
+.breadcrumb-item.active {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* List group text colors */
+.list-group-item {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.list-group-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.list-group-item-action {
+  color: #ffffff;
+}
+
+.list-group-item-action:hover {
+  color: #61f4c4;
+}
+
+/* Accordion text colors */
+.accordion-button {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.accordion-button:not(.collapsed) {
+  color: #61f4c4;
+  background-color: rgba(97, 244, 196, 0.1);
+}
+
+.accordion-button:focus {
+  box-shadow: 0 0 0 0.2rem rgba(97, 244, 196, 0.25);
+}
+
+.accordion-body {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Toast text colors */
+.toast {
+  color: #ffffff;
+  background-color: rgba(7, 17, 31, 0.98);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.toast-header {
+  color: #ffffff;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Progress bar text colors */
+.progress {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.progress-bar {
+  background-color: #61f4c4;
+}
+
+/* Tooltip text colors */
+.tooltip-inner {
+  color: #07111f;
+  background-color: #61f4c4;
+}
+
+/* Popover text colors */
+.popover {
+  background-color: rgba(7, 17, 31, 0.98);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.popover-header {
+  color: #ffffff;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.popover-body {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Spinner text colors */
+.spinner-border {
+  border-color: rgba(255, 255, 255, 0.1);
+  border-top-color: #61f4c4;
+}
+
+.spinner-grow {
+  background-color: #61f4c4;
+}
+
+/* Close button text colors */
+.btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Form check text colors */
+.form-check-input {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.form-check-input:checked {
+  background-color: #61f4c4;
+  border-color: #61f4c4;
+}
+
+.form-check-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Input group text colors */
+.input-group-text {
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Floating label text colors */
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label,
+.form-floating > .form-select ~ label {
+  color: #61f4c4;
+}
+
+.form-floating > label {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Valid/Invalid states */
+.form-control.is-valid {
+  border-color: #4caf50;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%234caf50' d='M2.3 6.73.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+}
+
+.form-control.is-invalid {
+  border-color: #f44336;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23f44336'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23f44336' stroke='none'/%3e%3c/svg%3e");
+}
+
+.valid-feedback {
+  color: #4caf50;
+}
+
+.invalid-feedback {
+  color: #f44336;
+}
+
+/* Ensure all headings have proper color */
+h1, h2, h3, h4, h5, h6 {
+  color: #ffffff;
+}
+
+/* Ensure all paragraphs have proper color */
+p {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Ensure all spans have proper color */
+span {
+  color: inherit;
+}
+
+/* Ensure all divs have proper color inheritance */
+div {
+  color: inherit;
+}
+
+/* Ensure all labels have proper color */
+label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Ensure all small text has proper color */
+small {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Ensure all blockquotes have proper color */
+blockquote {
+  color: rgba(255, 255, 255, 0.8);
+  border-left-color: #61f4c4;
+}
+
+/* Ensure all code has proper color */
+code {
+  color: #61f4c4;
+  background-color: rgba(97, 244, 196, 0.1);
+}
+
+pre {
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+pre code {
+  color: inherit;
+  background-color: transparent;
+}
+
+/* Ensure all kbd has proper color */
+kbd {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Ensure all mark has proper color */
+mark {
+  color: #07111f;
+  background-color: #61f4c4;
+}
+
+/* Ensure all abbr has proper color */
+abbr[title] {
+  color: #61f4c4;
+  text-decoration: underline dotted;
+}
+
+/* Ensure all address has proper color */
+address {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Ensure all blockquote footer has proper color */
+blockquote footer {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Ensure all figure caption has proper color */
+figcaption {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Profile Page Styles */
@@ -1268,7 +2313,7 @@ html {
   background:
     radial-gradient(circle at 12% 8%, rgba(97, 244, 196, 0.18), transparent 34%),
     radial-gradient(circle at 84% 18%, rgba(249, 212, 35, 0.18), transparent 34%),
-    linear-gradient(180deg, #07111f 0%, #0f2137 46%, #f5f9ff 46%, #ffffff 100%);
+    linear-gradient(180deg, #07111f 0%, #0f2137 50%, #0a1728 100%);
 }
 
 .hero-pro {
@@ -1309,13 +2354,13 @@ html {
 .hero-glow-one {
   left: -80px;
   top: 80px;
-  background: #61f4c4;
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .hero-glow-two {
   right: -100px;
   bottom: 40px;
-  background: #f9d423;
+  background: rgba(255, 255, 255, 0.2);
   animation-delay: 1.5s;
 }
 
@@ -1326,9 +2371,9 @@ html {
   padding: 10px 14px;
   margin-bottom: 20px;
   border-radius: 999px;
-  color: #61f4c4;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   font-weight: 700;
   font-size: 0.9rem;
 }
@@ -1339,7 +2384,7 @@ html {
   font-weight: 900;
   letter-spacing: -0.06em;
   margin-bottom: 24px;
-  background: linear-gradient(135deg, #61f4c4 0%, #4facfe 50%, #f9d423 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1447,11 +2492,11 @@ html {
 .hero-metrics strong {
   display: block;
   font-size: 1.6rem;
-  color: #f9d423;
+  color: #ffffff;
 }
 
 .hero-metrics span {
-  color: rgba(255, 255, 255, 0.68);
+  color: rgba(255, 255, 255, 0.85);
   font-size: 0.9rem;
 }
 
@@ -1543,7 +2588,7 @@ html {
 }
 
 .visual-showcase {
-  background: #ffffff;
+  background: #0a1728;
 }
 
 .showcase-large,
@@ -1553,7 +2598,7 @@ html {
   min-height: 420px;
   padding: 34px;
   border-radius: 34px;
-  color: #ffffff;
+  color: #0a1728;
   background:
     linear-gradient(120deg, rgba(5,8,13,0.9), rgba(5,8,13,0.34)),
     url("https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1300&q=80") center/cover;
@@ -1579,7 +2624,7 @@ html {
 
 .showcase-large p {
   max-width: 460px;
-  color: rgba(255,255,255,0.76);
+  color: rgba(10, 23, 40, 0.76);
   font-size: 1.1rem;
 }
 
@@ -1616,7 +2661,7 @@ html {
 }
 
 .info-section {
-  background: #ffffff;
+  background: #0a1728;
 }
 
 .section-heading {
@@ -1626,7 +2671,7 @@ html {
 }
 
 .section-heading span {
-  color: #0fb98e;
+  color: #61f4c4;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1637,11 +2682,11 @@ html {
   font-size: clamp(2rem, 4vw, 3.4rem);
   font-weight: 900;
   letter-spacing: -0.04em;
-  color: #0a1728;
+  color: #ffffff;
 }
 
 .section-heading p {
-  color: #62718a;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 1.08rem;
   line-height: 1.8;
 }
@@ -1654,6 +2699,7 @@ html {
   background: rgba(255,255,255,0.9);
   box-shadow: 0 24px 70px rgba(13, 35, 63, 0.1);
   transition: transform 0.34s ease, box-shadow 0.34s ease;
+  color: #0a1728;
 }
 
 .feature-card:hover,
@@ -1661,6 +2707,26 @@ html {
 .auth-card:hover {
   transform: translateY(-10px);
   box-shadow: 0 34px 90px rgba(13, 35, 63, 0.16);
+}
+
+.feature-card h3,
+.feature-card h4,
+.feature-card h5,
+.feature-card h6,
+.category-3d-card h3,
+.category-3d-card h4,
+.category-3d-card h5,
+.category-3d-card h6 {
+  color: #0a1728;
+}
+
+.feature-card p,
+.feature-card span,
+.feature-card div,
+.category-3d-card p,
+.category-3d-card span,
+.category-3d-card div {
+  color: rgba(10, 23, 40, 0.8);
 }
 
 .feature-icon,
@@ -1728,8 +2794,9 @@ html {
   gap: 18px;
   padding: 22px;
   border-radius: 26px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 20px 60px rgba(13, 35, 63, 0.1);
+  color: #0a1728;
 }
 
 .timeline-pro strong {
@@ -1745,7 +2812,7 @@ html {
 
 .timeline-pro span {
   font-weight: 800;
-  color: #13233a;
+  color: #0a1728;
 }
 
 .auth-page {

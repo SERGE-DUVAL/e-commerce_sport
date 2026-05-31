@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -26,7 +26,10 @@ api.interceptors.request.use(
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
-  getProfile: () => api.get('/auth/profile')
+  getProfile: () => api.get('/auth/profile'),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
+  googleAuth: (data) => api.post('/auth/google', data)
 };
 
 export const productAPI = {
@@ -37,7 +40,9 @@ export const productAPI = {
   delete: (id) => api.delete(`/products/${id}`),
   assignToZone: (data) => api.post('/products/assign-zone', data),
   getZones: (id) => api.get(`/products/${id}/zones`),
-  removeFromZone: (data) => api.post('/products/remove-zone', data)
+  removeFromZone: (data) => api.post('/products/remove-zone', data),
+  requestStockNotification: (data) => api.post('/products/stock-notification', data),
+  sendStockNotifications: (data) => api.post('/products/send-stock-notifications', data)
 };
 
 export const orderAPI = {
@@ -89,6 +94,16 @@ export const promotionAPI = {
 
 export const paymentAPI = {
   initiateSwitch: (data) => api.post('/payment/switch', data)
+};
+
+export const stripeAPI = {
+  createPaymentSession: (data) => api.post('/stripe/create-session', data),
+  checkPaymentStatus: (sessionId) => api.get(`/stripe/status/${sessionId}`)
+};
+
+export const cinetPayAPI = {
+  createPaymentSession: (data) => api.post('/cinetpay/create-session', data),
+  checkPaymentStatus: (transactionId) => api.get(`/cinetpay/status/${transactionId}`)
 };
 
 export const stockAPI = {

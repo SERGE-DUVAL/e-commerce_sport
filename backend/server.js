@@ -2,6 +2,8 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 const app = express();
 
@@ -20,62 +22,168 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/promotions', require('./routes/promotions'));
 app.use('/api/payment', require('./routes/payment'));
-app.use('/api/stock', require('./routes/stock'));
-app.use('/api/delivery', require('./routes/delivery'));
-app.use('/api/refunds', require('./routes/refunds'));
-app.use('/api/barcode', require('./routes/barcode'));
-app.use('/api/inventory', require('./routes/inventory'));
-app.use('/api/suppliers', require('./routes/suppliers'));
-app.use('/api/credits', require('./routes/credits'));
-app.use('/api/zones', require('./routes/zones'));
-app.use('/api/cash', require('./routes/cash'));
+app.use('/api/stripe', require('./routes/stripe'));
+app.use('/api/cinetpay', require('./routes/cinetPay'));
+ app.use('/api/stock', require('./routes/stock'));
+ app.use('/api/delivery', require('./routes/delivery'));
+ app.use('/api/refunds', require('./routes/refunds'));
+ app.use('/api/barcode', require('./routes/barcode'));
+ app.use('/api/inventory', require('./routes/inventory'));
+ app.use('/api/suppliers', require('./routes/suppliers'));
+ app.use('/api/credits', require('./routes/credits'));
+ app.use('/api/zones', require('./routes/zones'));
+ app.use('/api/cash', require('./routes/cash'));
 
-// Sync database
+// Swagger Documentation
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Sport-Equip API',
+      version: '1.0.0',
+      description: 'API documentation for Sport-Equip E-Commerce Platform',
+      contact: {
+        name: 'Sport-Equip Support',
+        email: 'support@sport-equip.com'
+      }
+    },
+    servers: [
+      {
+        url: 'http://localhost:5000',
+        description: 'Development server'
+      },
+      {
+        url: process.env.BACKEND_URL || 'http://localhost:5000',
+        description: 'Production server'
+      }
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
+        }
+      },
+      schemas: {
+        User: {
+          type: 'object',
+          properties: {
+            id_utilisateur: {
+              type: 'integer',
+              description: 'User ID'
+            },
+            nom: {
+              type: 'string',
+              description: 'User name'
+            },
+            email: {
+              type: 'string',
+              description: 'User email'
+            },
+            role: {
+              type: 'string',
+              enum: ['admin', 'client'],
+              description: 'User role'
+            }
+          }
+        },
+        Product: {
+          type: 'object',
+          properties: {
+            id_produit: {
+              type: 'integer',
+              description: 'Product ID'
+            },
+            titre: {
+              type: 'string',
+              description: 'Product title'
+            },
+            description: {
+              type: 'string',
+              description: 'Product description'
+            },
+            prix_xaf: {
+              type: 'number',
+              description: 'Product price in XAF'
+            },
+            stock: {
+              type: 'integer',
+              description: 'Product stock quantity'
+            },
+            categorie: {
+              type: 'string',
+              description: 'Product category'
+            },
+            image_url: {
+              type: 'string',
+              description: 'Product image URL'
+            }
+          }
+        },
+        Order: {
+          type: 'object',
+          properties: {
+            id_commande: {
+              type: 'integer',
+              description: 'Order ID'
+            },
+            id_utilisateur: {
+              type: 'integer',
+              description: 'User ID'
+            },
+            total_xaf: {
+              type: 'number',
+              description: 'Order total in XAF'
+            },
+            statut: {
+              type: 'string',
+              enum: ['en_attente', 'en_cours', 'livre', 'annule'],
+              description: 'Order status'
+            },
+            adresse_livraison: {
+              type: 'string',
+              description: 'Delivery address'
+            }
+          }
+        },
+        Error: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              description: 'Error message'
+            },
+            error: {
+              type: 'string',
+              description: 'Error details'
+            }
+          }
+        }
+      }
+    },
+    security: [
+      {
+        bearerAuth: []
+      }
+    ]
+  },
+  apis: ['./routes/*.js', './controllers/*.js']
+};
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Sync database - désactivé car better-sqlite3 incompatible avec Sequelize sync
+// La base de données existe déjà et est utilisée directement par better-sqlite3
 const db = require('./config/database');
-db.sync({ force: false })
-  .then(async () => {
-    console.log('Base de données SQLite synchronisée');
-
-    // Migration manuelle pour ajouter les nouvelles colonnes
-    try {
-      await db.query('ALTER TABLE commandes ADD COLUMN id_caisse INTEGER');
-      console.log('Colonne id_caisse ajoutée à commandes');
-    } catch (err) {
-      if (!err.message.includes('duplicate column name')) {
-        console.error('Erreur ajout id_caisse:', err.message);
-      }
-    }
-
-    try {
-      await db.query('ALTER TABLE commandes ADD COLUMN montant_rembourse INTEGER DEFAULT 0');
-      console.log('Colonne montant_rembourse ajoutée à commandes');
-    } catch (err) {
-      if (!err.message.includes('duplicate column name')) {
-        console.error('Erreur ajout montant_rembourse:', err.message);
-      }
-    }
-
-    try {
-      await db.query('ALTER TABLE avis ADD COLUMN type_avis TEXT DEFAULT "produit"');
-      console.log('Colonne type_avis ajoutée à avis');
-    } catch (err) {
-      if (!err.message.includes('duplicate column name')) {
-        console.error('Erreur ajout type_avis:', err.message);
-      }
-    }
-
-    try {
-      await db.query('ALTER TABLE avis ADD COLUMN id_commande INTEGER');
-      console.log('Colonne id_commande ajoutée à avis');
-    } catch (err) {
-      if (!err.message.includes('duplicate column name')) {
-        console.error('Erreur ajout id_commande:', err.message);
-      }
-    }
-  })
-  .catch(err => {
-    console.error('Erreur de synchronisation BDD:', err);
-  });
+// db.sync({ force: false })
+//   .then(async () => {
+//     console.log('Base de données SQLite synchronisée');
+//   })
+//   .catch(err => {
+//     console.error('Erreur de synchronisation BDD:', err);
+//   });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

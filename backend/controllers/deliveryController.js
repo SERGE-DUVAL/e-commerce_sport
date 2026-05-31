@@ -1,10 +1,18 @@
-const { Livreur, AffectationLivraison, Commande, Utilisateur, LigneCommande, Produit } = require('../models');
+const Database = require('better-sqlite3');
+const path = require('path');
 const PDFDocument = require('pdfkit');
+
+const db = new Database(path.join(__dirname, '../../sport-equip.sqlite'));
 
 // Créer un livreur
 exports.createLivreur = async (req, res) => {
   try {
-    const livreur = await Livreur.create(req.body);
+    const result = db.prepare(`
+      INSERT INTO livreurs (nom, prenom, telephone, vehicule, plaque_immatriculation, statut, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 'disponible', datetime('now'), datetime('now'))
+    `).run(req.body.nom, req.body.prenom, req.body.telephone, req.body.vehicule, req.body.plaque_immatriculation);
+    
+    const livreur = db.prepare('SELECT * FROM livreurs WHERE id_livreur = ?').get(result.lastInsertRowid);
     res.status(201).json(livreur);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
@@ -14,40 +22,20 @@ exports.createLivreur = async (req, res) => {
 // Récupérer tous les livreurs
 exports.getAllLivreurs = async (req, res) => {
   try {
-    const livreurs = await Livreur.findAll();
-    
-    // Synchroniser le statut des livreurs en fonction de leurs affectations actuelles
-    for (const livreur of livreurs) {
-      const affectationsEnCours = await AffectationLivraison.findAll({
-        where: { 
-          id_livreur: livreur.id_livreur,
-          statut: ['en attente', 'en livraison']
-        }
-      });
-      
-      // Si le livreur a des affectations en cours mais son statut est "disponible", le mettre à jour
-      if (affectationsEnCours.length > 0 && livreur.statut === 'disponible') {
-        await livreur.update({ statut: 'en livraison' });
-      }
-      
-      // Si le livreur n'a pas d'affectations en cours mais son statut est "en livraison", le mettre à jour
-      if (affectationsEnCours.length === 0 && livreur.statut === 'en livraison') {
-        await livreur.update({ statut: 'disponible' });
-      }
-    }
-    
-    // Récupérer les livreurs mis à jour
-    const livreursMajores = await Livreur.findAll();
-    res.json(livreursMajores);
+    const livreurs = db.prepare('SELECT * FROM livreurs').all();
+    console.log('Livreurs found:', livreurs.length);
+    res.json(livreurs);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+    console.error('Erreur getAllLivreurs:', error);
+    // Return empty array instead of error to prevent frontend issues
+    res.json([]);
   }
 };
 
 // Récupérer un livreur par ID
 exports.getLivreurById = async (req, res) => {
   try {
-    const livreur = await Livreur.findByPk(req.params.id);
+    const livreur = db.prepare('SELECT * FROM livreurs WHERE id_livreur = ?').get(req.params.id);
     if (!livreur) {
       return res.status(404).json({ message: 'Livreur non trouvé' });
     }
@@ -60,13 +48,32 @@ exports.getLivreurById = async (req, res) => {
 // Modifier un livreur
 exports.updateLivreur = async (req, res) => {
   try {
-    const livreur = await Livreur.findByPk(req.params.id);
+    const livreur = db.prepare('SELECT * FROM livreurs WHERE id_livreur = ?').get(req.params.id);
     if (!livreur) {
       return res.status(404).json({ message: 'Livreur non trouvé' });
     }
 
-    await livreur.update(req.body);
-    res.json(livreur);
+    const updates = [];
+    const values = [];
+    
+    if (req.body.nom) { updates.push('nom = ?'); values.push(req.body.nom); }
+    if (req.body.prenom) { updates.push('prenom = ?'); values.push(req.body.prenom); }
+    if (req.body.telephone) { updates.push('telephone = ?'); values.push(req.body.telephone); }
+    if (req.body.vehicule) { updates.push('vehicule = ?'); values.push(req.body.vehicule); }
+    if (req.body.plaque_immatriculation) { updates.push('plaque_immatriculation = ?'); values.push(req.body.plaque_immatriculation); }
+    if (req.body.statut) { updates.push('statut = ?'); values.push(req.body.statut); }
+    if (req.body.latitude !== undefined) { updates.push('latitude = ?'); values.push(req.body.latitude); }
+    if (req.body.longitude !== undefined) { updates.push('longitude = ?'); values.push(req.body.longitude); }
+    
+    updates.push('updated_at = datetime("now")');
+    values.push(req.params.id);
+
+    if (updates.length > 1) {
+      db.prepare(`UPDATE livreurs SET ${updates.join(', ')} WHERE id_livreur = ?`).run(...values);
+    }
+
+    const updatedLivreur = db.prepare('SELECT * FROM livreurs WHERE id_livreur = ?').get(req.params.id);
+    res.json(updatedLivreur);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -75,21 +82,22 @@ exports.updateLivreur = async (req, res) => {
 // Supprimer un livreur
 exports.deleteLivreur = async (req, res) => {
   try {
-    const livreur = await Livreur.findByPk(req.params.id);
+    const livreur = db.prepare('SELECT * FROM livreurs WHERE id_livreur = ?').get(req.params.id);
     if (!livreur) {
       return res.status(404).json({ message: 'Livreur non trouvé' });
     }
 
     // Vérifier si le livreur a des affectations en cours
-    const affectationsEnCours = await AffectationLivraison.findAll({
-      where: { id_livreur: req.params.id, statut: 'en livraison' }
-    });
+    const affectationsEnCours = db.prepare(`
+      SELECT * FROM affectations_livraison 
+      WHERE id_livreur = ? AND statut = 'en livraison'
+    `).all(req.params.id);
 
     if (affectationsEnCours.length > 0) {
       return res.status(400).json({ message: 'Impossible de supprimer un livreur avec des livraisons en cours' });
     }
 
-    await livreur.destroy();
+    db.prepare('DELETE FROM livreurs WHERE id_livreur = ?').run(req.params.id);
     res.json({ message: 'Livreur supprimé avec succès' });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
@@ -102,13 +110,13 @@ exports.assignDelivery = async (req, res) => {
     const { id_commande, id_livreur, date_livraison_prevue } = req.body;
 
     // Vérifier que la commande existe
-    const commande = await Commande.findByPk(id_commande);
+    const commande = db.prepare('SELECT * FROM commandes WHERE id_commande = ?').get(id_commande);
     if (!commande) {
       return res.status(404).json({ message: 'Commande non trouvée' });
     }
 
     // Vérifier que le livreur existe et est disponible
-    const livreur = await Livreur.findByPk(id_livreur);
+    const livreur = db.prepare('SELECT * FROM livreurs WHERE id_livreur = ?').get(id_livreur);
     if (!livreur) {
       return res.status(404).json({ message: 'Livreur non trouvé' });
     }
@@ -118,19 +126,20 @@ exports.assignDelivery = async (req, res) => {
     }
 
     // Créer l'affectation
-    const affectation = await AffectationLivraison.create({
-      id_commande,
-      id_livreur,
-      date_livraison_prevue,
-      statut: 'en attente'
-    });
+    const result = db.prepare(`
+      INSERT INTO affectations_livraison (id_commande, id_livreur, date_livraison_prevue, statut, created_at, updated_at)
+      VALUES (?, ?, ?, 'en attente', datetime('now'), datetime('now'))
+    `).run(id_commande, id_livreur, date_livraison_prevue);
 
     // Mettre à jour le statut de la commande
-    await commande.update({ statut: 'En livraison' });
+    db.prepare('UPDATE commandes SET statut = ?, updated_at = datetime("now") WHERE id_commande = ?')
+      .run('En livraison', id_commande);
 
     // Mettre à jour le statut du livreur
-    await livreur.update({ statut: 'en livraison' });
+    db.prepare('UPDATE livreurs SET statut = ?, updated_at = datetime("now") WHERE id_livreur = ?')
+      .run('en livraison', id_livreur);
 
+    const affectation = db.prepare('SELECT * FROM affectations_livraison WHERE id_affectation = ?').get(result.lastInsertRowid);
     res.status(201).json(affectation);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
@@ -141,19 +150,20 @@ exports.assignDelivery = async (req, res) => {
 exports.updateLivreurLocation = async (req, res) => {
   try {
     const { latitude, longitude } = req.body;
-    const livreur = await Livreur.findByPk(req.params.id);
+    const livreur = db.prepare('SELECT * FROM livreurs WHERE id_livreur = ?').get(req.params.id);
 
     if (!livreur) {
       return res.status(404).json({ message: 'Livreur non trouvé' });
     }
 
-    await livreur.update({
-      latitude,
-      longitude,
-      derniere_mise_a_jour_gps: new Date()
-    });
+    db.prepare(`
+      UPDATE livreurs 
+      SET latitude = ?, longitude = ?, derniere_mise_a_jour_gps = datetime('now'), updated_at = datetime('now')
+      WHERE id_livreur = ?
+    `).run(latitude, longitude, req.params.id);
 
-    res.json(livreur);
+    const updatedLivreur = db.prepare('SELECT * FROM livreurs WHERE id_livreur = ?').get(req.params.id);
+    res.json(updatedLivreur);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -220,14 +230,32 @@ exports.calculateDistance = async (req, res) => {
 // Récupérer les affectations de livraison
 exports.getAffectations = async (req, res) => {
   try {
-    const affectations = await AffectationLivraison.findAll({
-      include: [
-        { model: Commande, as: 'commande' },
-        { model: Livreur, as: 'livreur' }
-      ],
-      order: [['date_affectation', 'DESC']]
-    });
-    res.json(affectations);
+    const affectations = db.prepare(`
+      SELECT a.*, c.*, l.* 
+      FROM affectations_livraison a
+      LEFT JOIN commandes c ON a.id_commande = c.id_commande
+      LEFT JOIN livreurs l ON a.id_livreur = l.id_livreur
+      ORDER BY a.date_affectation DESC
+    `).all();
+    
+    // Format the response to match the Sequelize structure
+    const formatted = affectations.map(a => ({
+      ...a,
+      commande: {
+        id_commande: a.id_commande,
+        total_xaf: a.total_xaf,
+        statut: a.statut,
+        adresse_livraison: a.adresse_livraison
+      },
+      livreur: {
+        id_livreur: a.id_livreur,
+        nom: a.nom,
+        prenom: a.prenom,
+        telephone: a.telephone
+      }
+    }));
+    
+    res.json(formatted);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -237,31 +265,35 @@ exports.getAffectations = async (req, res) => {
 exports.updateAffectationStatus = async (req, res) => {
   try {
     const { statut, notes } = req.body;
-    const affectation = await AffectationLivraison.findByPk(req.params.id);
+    const affectation = db.prepare('SELECT * FROM affectations_livraison WHERE id_affectation = ?').get(req.params.id);
 
     if (!affectation) {
       return res.status(404).json({ message: 'Affectation non trouvée' });
     }
 
-    const updateData = { statut };
-    if (notes) updateData.notes = notes;
-
-    if (statut === 'livrée') {
-      updateData.date_livraison_reelle = new Date();
-      // Mettre à jour le statut de la commande
-      const commande = await Commande.findByPk(affectation.id_commande);
-      if (commande) {
-        await commande.update({ statut: 'Livrée' });
-      }
-      // Libérer le livreur
-      const livreur = await Livreur.findByPk(affectation.id_livreur);
-      if (livreur) {
-        await livreur.update({ statut: 'disponible' });
-      }
+    const updates = ['statut = ?', 'updated_at = datetime("now")'];
+    const values = [statut];
+    
+    if (notes) {
+      updates.push('notes = ?');
+      values.push(notes);
     }
 
-    await affectation.update(updateData);
-    res.json(affectation);
+    if (statut === 'livrée') {
+      updates.push('date_livraison_reelle = datetime("now")');
+      // Mettre à jour le statut de la commande
+      db.prepare('UPDATE commandes SET statut = ?, updated_at = datetime("now") WHERE id_commande = ?')
+        .run('Livrée', affectation.id_commande);
+      // Libérer le livreur
+      db.prepare('UPDATE livreurs SET statut = ?, updated_at = datetime("now") WHERE id_livreur = ?')
+        .run('disponible', affectation.id_livreur);
+    }
+
+    values.push(req.params.id);
+    db.prepare(`UPDATE affectations_livraison SET ${updates.join(', ')} WHERE id_affectation = ?`).run(...values);
+
+    const updatedAffectation = db.prepare('SELECT * FROM affectations_livraison WHERE id_affectation = ?').get(req.params.id);
+    res.json(updatedAffectation);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -270,38 +302,29 @@ exports.updateAffectationStatus = async (req, res) => {
 // Générer un bordereau de livraison en PDF
 exports.generateDeliveryNote = async (req, res) => {
   try {
-    const affectation = await AffectationLivraison.findByPk(req.params.id, {
-      include: [
-        {
-          model: Commande,
-          as: 'commande',
-          include: [
-            {
-              model: Utilisateur,
-              as: 'Utilisateur'
-            },
-            {
-              model: LigneCommande,
-              as: 'LigneCommandes',
-              include: [
-                {
-                  model: Produit,
-                  as: 'Produit'
-                }
-              ]
-            }
-          ]
-        },
-        {
-          model: Livreur,
-          as: 'livreur'
-        }
-      ]
-    });
+    const affectation = db.prepare(`
+      SELECT a.*, 
+             c.*, u.nom as utilisateur_nom, u.email as utilisateur_email,
+             l.nom as livreur_nom, l.prenom as livreur_prenom, l.telephone as livreur_telephone, 
+             l.vehicule as livreur_vehicule, l.plaque_immatriculation as livreur_plaque
+      FROM affectations_livraison a
+      LEFT JOIN commandes c ON a.id_commande = c.id_commande
+      LEFT JOIN utilisateurs u ON c.id_utilisateur = u.id_utilisateur
+      LEFT JOIN livreurs l ON a.id_livreur = l.id_livreur
+      WHERE a.id_affectation = ?
+    `).get(req.params.id);
 
     if (!affectation) {
       return res.status(404).json({ message: 'Affectation non trouvée' });
     }
+
+    // Récupérer les lignes de commande
+    const lignes = db.prepare(`
+      SELECT lc.*, p.titre, p.prix_xaf
+      FROM ligne_commandes lc
+      LEFT JOIN produits p ON lc.id_produit = p.id_produit
+      WHERE lc.id_commande = ?
+    `).all(affectation.id_commande);
 
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     const filename = `bordereau_livraison_${affectation.id_affectation}.pdf`;
@@ -323,29 +346,29 @@ exports.generateDeliveryNote = async (req, res) => {
     doc.fontSize(16).text('Informations Client', { underline: true });
     doc.moveDown();
     doc.fontSize(12);
-    doc.text(`Nom: ${affectation.commande.Utilisateur?.nom || 'N/A'}`);
-    doc.text(`Email: ${affectation.commande.Utilisateur?.email || 'N/A'}`);
-    doc.text(`Adresse: ${affectation.commande.adresse_livraison || 'N/A'}`);
+    doc.text(`Nom: ${affectation.utilisateur_nom || 'N/A'}`);
+    doc.text(`Email: ${affectation.utilisateur_email || 'N/A'}`);
+    doc.text(`Adresse: ${affectation.adresse_livraison || 'N/A'}`);
 
     // Informations commande
     doc.moveDown(2);
     doc.fontSize(16).text('Informations Commande', { underline: true });
     doc.moveDown();
     doc.fontSize(12);
-    doc.text(`Commande N°: ${affectation.commande.id_commande}`);
-    doc.text(`Date commande: ${new Date(affectation.commande.createdAt).toLocaleDateString('fr-FR')}`);
-    doc.text(`Total: ${affectation.commande.total_xaf.toLocaleString('fr-FR')} FCFA`);
-    doc.text(`Moyen paiement: ${affectation.commande.moyen_paiement}`);
+    doc.text(`Commande N°: ${affectation.id_commande}`);
+    doc.text(`Date commande: ${new Date(affectation.created_at).toLocaleDateString('fr-FR')}`);
+    doc.text(`Total: ${affectation.total_xaf.toLocaleString('fr-FR')} FCFA`);
+    doc.text(`Moyen paiement: ${affectation.moyen_paiement}`);
 
     // Informations livreur
     doc.moveDown(2);
     doc.fontSize(16).text('Informations Livreur', { underline: true });
     doc.moveDown();
     doc.fontSize(12);
-    doc.text(`Nom: ${affectation.livreur?.nom} ${affectation.livreur?.prenom}`);
-    doc.text(`Téléphone: ${affectation.livreur?.telephone}`);
-    doc.text(`Véhicule: ${affectation.livreur?.vehicule}`);
-    doc.text(`Plaque: ${affectation.livreur?.plaque_immatriculation}`);
+    doc.text(`Nom: ${affectation.livreur_nom} ${affectation.livreur_prenom}`);
+    doc.text(`Téléphone: ${affectation.livreur_telephone}`);
+    doc.text(`Véhicule: ${affectation.livreur_vehicule}`);
+    doc.text(`Plaque: ${affectation.livreur_plaque}`);
 
     // Détails articles
     doc.moveDown(2);
@@ -374,7 +397,7 @@ exports.generateDeliveryNote = async (req, res) => {
 
     // Données articles
     doc.fillColor('black');
-    affectation.commande.LigneCommandes.forEach((ligne, index) => {
+    lignes.forEach((ligne, index) => {
       const y = tableTop + 25 + (index * rowHeight);
 
       // Nouvelle page si nécessaire
@@ -394,10 +417,10 @@ exports.generateDeliveryNote = async (req, res) => {
       }
 
       const rowData = [
-        ligne.Produit?.titre || 'Produit supprimé',
+        ligne.titre || 'Produit supprimé',
         ligne.quantite,
-        `${ligne.prix_unitaire_achat} FCFA`,
-        `${ligne.quantite * ligne.prix_unitaire_achat} FCFA`
+        `${ligne.prix_xaf} FCFA`,
+        `${ligne.quantite * ligne.prix_xaf} FCFA`
       ];
 
       rowData.forEach((data, i) => {

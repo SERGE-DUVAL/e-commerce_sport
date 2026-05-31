@@ -15,8 +15,8 @@
 
 
 -- Listage de la structure de la base pour sport-equip
-CREATE DATABASE IF NOT EXISTS "sport-equip";
-;
+CREATE DATABASE IF NOT EXISTS "sport_equip";
+
 
 -- Listage de la structure de table sport-equip. affectations_livraison
 CREATE TABLE IF NOT EXISTS `affectations_livraison` (`id_affectation` INTEGER PRIMARY KEY AUTOINCREMENT, `id_commande` INTEGER NOT NULL REFERENCES `commandes` (`id_commande`) ON DELETE NO ACTION ON UPDATE CASCADE, `id_livreur` INTEGER NOT NULL REFERENCES `livreurs` (`id_livreur`) ON DELETE NO ACTION ON UPDATE CASCADE, `date_affectation` DATETIME NOT NULL, `date_livraison_prevue` DATETIME, `date_livraison_reelle` DATETIME, `statut` TEXT DEFAULT 'en attente', `notes` TEXT, `temperature` FLOAT, `conditions_meteo` VARCHAR(255), `created_at` DATETIME NOT NULL, `updated_at` DATETIME NOT NULL);

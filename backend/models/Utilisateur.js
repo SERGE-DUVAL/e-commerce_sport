@@ -33,6 +33,12 @@ const Utilisateur = sequelize.define('Utilisateur', {
   },
   adresse_livraison: {
     type: Sequelize.TEXT
+  },
+  reset_token: {
+    type: Sequelize.STRING
+  },
+  reset_token_expiry: {
+    type: Sequelize.DATE
   }
 }, {
   tableName: 'utilisateurs',
