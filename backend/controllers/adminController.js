@@ -1,57 +1,61 @@
-const { Utilisateur, Commande, LigneCommande, Produit, Promotion } = require('../models');
+const Database = require('better-sqlite3');
+const path = require('path');
 const PDFDocument = require('pdfkit');
 const { Parser } = require('json2csv');
-const { Op } = require('sequelize');
+
+const db = new Database(path.join(__dirname, '../../sport-equip.sqlite'));
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const totalRevenus = await Commande.sum('total_xaf', {
-      where: { statut: 'Payée' }
-    }) || 0;
+    const totalRevenus = db.prepare(`
+      SELECT SUM(total_xaf) as total FROM commandes WHERE statut = 'Payée'
+    `).get()?.total || 0;
 
-    const totalCommandes = await Commande.count({
-      where: { statut: 'Payée' }
-    });
+    const totalCommandes = db.prepare(`
+      SELECT COUNT(*) as total FROM commandes WHERE statut = 'Payée'
+    `).get()?.total || 0;
 
-    const totalClients = await Utilisateur.count({
-      where: { role: 'client' }
-    });
+    const totalClients = db.prepare(`
+      SELECT COUNT(*) as total FROM utilisateurs WHERE role = 'client'
+    `).get()?.total || 0;
 
-    const produitsEnStock = await Produit.sum('stock') || 0;
+    const produitsEnStock = db.prepare(`
+      SELECT SUM(stock) as total FROM produits
+    `).get()?.total || 0;
 
-    const produitsVendus = await LigneCommande.sum('quantite') || 0;
+    const produitsVendus = db.prepare(`
+      SELECT SUM(quantite) as total FROM ligne_commandes
+    `).get()?.total || 0;
 
-    const commandesPayeesRecentes = await Commande.findAll({
-      where: {
-        statut: 'Payée',
-        createdAt: {
-          [Op.gte]: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        }
-      },
-      attributes: ['total_xaf', 'createdAt'],
-      order: [['createdAt', 'ASC']]
-    });
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const commandesPayeesRecentes = db.prepare(`
+      SELECT total_xaf, created_at FROM commandes 
+      WHERE statut = 'Payée' AND created_at >= ?
+      ORDER BY created_at ASC
+    `).all(thirtyDaysAgo);
 
     const ventesParJourMap = commandesPayeesRecentes.reduce((acc, commande) => {
-      const date = commande.createdAt.toISOString().slice(0, 10);
+      const date = commande.created_at.slice(0, 10);
       acc[date] = (acc[date] || 0) + Number(commande.total_xaf || 0);
       return acc;
     }, {});
 
     const ventesParJour = Object.entries(ventesParJourMap).map(([date, total]) => ({ date, total }));
 
-    // Top 5 produits les plus vendus (calcul JavaScript)
-    const allLignes = await LigneCommande.findAll({
-      include: [{ model: Produit, as: 'Produit', attributes: ['titre', 'categorie'] }]
-    });
+    // Top 5 produits les plus vendus
+    const allLignes = db.prepare(`
+      SELECT lc.*, p.titre, p.categorie 
+      FROM ligne_commandes lc
+      LEFT JOIN produits p ON lc.id_produit = p.id_produit
+    `).all();
 
     const produitsMap = allLignes.reduce((acc, ligne) => {
       const id = ligne.id_produit;
       if (!acc[id]) {
         acc[id] = {
           id_produit: id,
-          titre: ligne.Produit?.titre || 'Produit supprimé',
-          categorie: ligne.Produit?.categorie || 'N/A',
+          titre: ligne.titre || 'Produit supprimé',
+          categorie: ligne.categorie || 'N/A',
           total_vendu: 0
         };
       }
@@ -63,13 +67,14 @@ exports.getDashboardStats = async (req, res) => {
       .sort((a, b) => b.total_vendu - a.total_vendu)
       .slice(0, 5);
 
-    // Top 5 clients les plus fidèles (par points fidélité)
-    const topClients = await Utilisateur.findAll({
-      where: { role: 'client' },
-      attributes: ['id_utilisateur', 'nom', 'email', 'points_fidelite'],
-      order: [['points_fidelite', 'DESC']],
-      limit: 5
-    });
+    // Top 5 clients les plus fidèles
+    const topClients = db.prepare(`
+      SELECT id_utilisateur, nom, email, points_fidelite 
+      FROM utilisateurs 
+      WHERE role = 'client'
+      ORDER BY points_fidelite DESC
+      LIMIT 5
+    `).all();
 
     res.json({
       totalRevenus,
@@ -88,18 +93,18 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.getAllClients = async (req, res) => {
   try {
-    const clients = await Utilisateur.findAll({
-      where: { role: 'client' },
-      attributes: { exclude: ['mot_de_passe'] },
-      include: [{
-        model: Commande,
-        as: 'Commandes',
-        order: [['createdAt', 'DESC']],
-        limit: 1
-      }]
+    const clients = db.prepare(`
+      SELECT u.* FROM utilisateurs u
+      WHERE u.role = 'client'
+    `).all();
+
+    // Remove password from response
+    const clientsWithoutPassword = clients.map(c => {
+      const { mot_de_passe, ...rest } = c;
+      return rest;
     });
 
-    res.json(clients);
+    res.json(clientsWithoutPassword);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -136,29 +141,38 @@ exports.deleteClient = async (req, res) => {
 };
 exports.getAllOrders = async (req, res) => {
   try {
-    const commandes = await Commande.findAll({
-      include: [
-        { 
-          model: Utilisateur, 
-          as: 'Utilisateur',
-          attributes: ['id_utilisateur', 'nom', 'email', 'role'],
-          required: false
-        },
-        { 
-          model: LigneCommande, 
-          as: 'LigneCommandes',
-          include: [{ 
-            model: Produit, 
-            as: 'Produit',
-            attributes: ['id_produit', 'titre', 'categorie', 'prix_xaf'] 
-          }],
-          required: false
-        }
-      ],
-      order: [['createdAt', 'DESC']]
+    const commandes = db.prepare(`
+      SELECT c.* FROM commandes c
+      ORDER BY c.created_at DESC
+    `).all();
+
+    // Get utilisateurs for each commande
+    const utilisateurs = db.prepare('SELECT * FROM utilisateurs').all();
+    const utilisateursMap = new Map(utilisateurs.map(u => [u.id_utilisateur, u]));
+
+    // Get ligne_commandes for each commande
+    const lignes = db.prepare(`
+      SELECT lc.*, p.titre, p.categorie, p.prix_xaf
+      FROM ligne_commandes lc
+      LEFT JOIN produits p ON lc.id_produit = p.id_produit
+    `).all();
+
+    const lignesMap = new Map();
+    lignes.forEach(l => {
+      if (!lignesMap.has(l.id_commande)) {
+        lignesMap.set(l.id_commande, []);
+      }
+      lignesMap.get(l.id_commande).push(l);
     });
 
-    res.json(commandes);
+    // Format response
+    const formattedCommandes = commandes.map(c => ({
+      ...c,
+      Utilisateur: utilisateursMap.get(c.id_utilisateur) || null,
+      LigneCommandes: lignesMap.get(c.id_commande) || []
+    }));
+
+    res.json(formattedCommandes);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -191,7 +205,7 @@ exports.createPromotion = async (req, res) => {
 
 exports.getAllPromotions = async (req, res) => {
   try {
-    const promotions = await Promotion.findAll();
+    const promotions = db.prepare('SELECT * FROM promotions').all();
     res.json(promotions);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
@@ -226,13 +240,32 @@ exports.deletePromotion = async (req, res) => {
 
 exports.exportPDF = async (req, res) => {
   try {
-    const commandes = await Commande.findAll({
-      where: { statut: 'Payée' },
-      include: [
-        { model: Utilisateur, as: 'Utilisateur', attributes: ['nom', 'email'] },
-        { model: LigneCommande, as: 'LigneCommandes', include: [{ model: Produit, as: 'Produit' }] }
-      ],
-      order: [['createdAt', 'DESC']]
+    const commandes = db.prepare(`
+      SELECT c.*, u.nom as client_nom, u.email as client_email
+      FROM commandes c
+      LEFT JOIN utilisateurs u ON c.id_utilisateur = u.id_utilisateur
+      WHERE c.statut IN ('Payée', 'Livrée')
+      ORDER BY c.created_at DESC
+    `).all();
+
+    // Get ligne_commandes for each commande
+    const lignes = db.prepare(`
+      SELECT lc.*, p.titre as produit_titre
+      FROM ligne_commandes lc
+      LEFT JOIN produits p ON lc.id_produit = p.id_produit
+    `).all();
+
+    const lignesMap = new Map();
+    lignes.forEach(l => {
+      if (!lignesMap.has(l.id_commande)) {
+        lignesMap.set(l.id_commande, []);
+      }
+      lignesMap.get(l.id_commande).push(l);
+    });
+
+    // Add LigneCommandes to each commande
+    commandes.forEach(c => {
+      c.LigneCommandes = lignesMap.get(c.id_commande) || [];
     });
 
     const doc = new PDFDocument({ margin: 50 });
@@ -312,8 +345,8 @@ exports.exportPDF = async (req, res) => {
 
       const rowData = [
         `#${commande.id_commande}`,
-        commande.Utilisateur?.nom || 'Utilisateur supprimé',
-        commande.createdAt.toLocaleDateString('fr-FR'),
+        commande.client_nom || 'Utilisateur supprimé',
+        new Date(commande.created_at).toLocaleDateString('fr-FR'),
         `${commande.total_xaf.toLocaleString('fr-FR')} FCFA`,
         commande.statut
       ];
@@ -345,24 +378,38 @@ exports.exportPDF = async (req, res) => {
 
 exports.exportCSV = async (req, res) => {
   try {
-    const commandes = await Commande.findAll({
-      where: { statut: 'Payée' },
-      include: [
-        { model: Utilisateur, as: 'Utilisateur', attributes: ['nom', 'email'] },
-        { model: LigneCommande, as: 'LigneCommandes', include: [{ model: Produit, as: 'Produit' }] }
-      ],
-      order: [['createdAt', 'DESC']]
+    const commandes = db.prepare(`
+      SELECT c.*, u.nom as client_nom, u.email as client_email
+      FROM commandes c
+      LEFT JOIN utilisateurs u ON c.id_utilisateur = u.id_utilisateur
+      WHERE c.statut = 'Payée'
+      ORDER BY c.created_at DESC
+    `).all();
+
+    // Get ligne_commandes for each commande
+    const lignes = db.prepare(`
+      SELECT lc.*, p.titre as produit_titre
+      FROM ligne_commandes lc
+      LEFT JOIN produits p ON lc.id_produit = p.id_produit
+    `).all();
+
+    const lignesMap = new Map();
+    lignes.forEach(l => {
+      if (!lignesMap.has(l.id_commande)) {
+        lignesMap.set(l.id_commande, []);
+      }
+      lignesMap.get(l.id_commande).push(l);
     });
 
     const data = commandes.map(c => ({
       id_commande: c.id_commande,
-      client: c.Utilisateur?.nom || 'Utilisateur supprimé',
-      email: c.Utilisateur?.email || 'N/A',
-      date: c.createdAt.toLocaleDateString('fr-FR'),
+      client: c.client_nom || 'Utilisateur supprimé',
+      email: c.client_email || 'N/A',
+      date: new Date(c.created_at).toLocaleDateString('fr-FR'),
       total_xaf: c.total_xaf,
       moyen_paiement: c.moyen_paiement,
       statut: c.statut,
-      articles: c.LigneCommandes.map(l => `${l.Produit?.titre || 'Produit inconnu'} (x${l.quantite})`).join(', ')
+      articles: (lignesMap.get(c.id_commande) || []).map(l => `${l.produit_titre || 'Produit inconnu'} (x${l.quantite})`).join(', ')
     }));
 
     const fields = ['id_commande', 'client', 'email', 'date', 'total_xaf', 'moyen_paiement', 'statut', 'articles'];

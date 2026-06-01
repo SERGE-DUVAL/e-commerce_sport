@@ -1,12 +1,14 @@
 const jwt = require('jsonwebtoken');
-const { Utilisateur } = require('../models');
+const Database = require('better-sqlite3');
+const path = require('path');
 
+const db = new Database(path.join(__dirname, '../../sport-equip.sqlite'));
 const JWT_SECRET = process.env.JWT_SECRET || 'sport_equip_secret_key_2026';
 
 exports.protect = async (req, res, next) => {
   try {
     let token;
-    
+
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     }
@@ -16,9 +18,9 @@ exports.protect = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    
-    const utilisateur = await Utilisateur.findByPk(decoded.id);
-    
+
+    const utilisateur = db.prepare('SELECT * FROM utilisateurs WHERE id_utilisateur = ?').get(decoded.id);
+
     if (!utilisateur) {
       return res.status(401).json({ message: 'Non autorisé - Utilisateur non trouvé' });
     }

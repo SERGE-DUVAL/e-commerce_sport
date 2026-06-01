@@ -1,10 +1,10 @@
-const { CohereClient } = require("cohere-ai");
-const { Produit, Commande, Utilisateur } = require("../models");
+const Database = require('better-sqlite3');
+const path = require('path');
 require("dotenv").config();
+const axios = require('axios');
 
-const cohere = new CohereClient({
-  token: process.env.COHERE_API_KEY,
-});
+// Base de données directe avec better-sqlite3
+const db = new Database(path.join(__dirname, '../../sport-equip.sqlite'), { readonly: true });
 
 // Mémoire simple des conversations
 const conversations = {};
@@ -20,7 +20,7 @@ exports.chat = async (req, res) => {
       });
     }
 
-    const userId = req.utilisateur?.id_utilisateur;
+    const userId = req.utilisateur?.id_utilisateur || 'anonymous';
 
     // =========================
     // INITIALISATION HISTORIQUE
@@ -37,7 +37,7 @@ exports.chat = async (req, res) => {
     let contexte = "";
 
     if (userId) {
-      const utilisateur = await Utilisateur.findByPk(userId);
+      const utilisateur = db.prepare('SELECT * FROM utilisateurs WHERE id_utilisateur = ?').get(userId);
 
       if (utilisateur) {
         contexte += `
@@ -52,11 +52,7 @@ Points fidélité : ${utilisateur.points_fidelite}
       // DERNIÈRES COMMANDES
       // =========================
 
-      const commandes = await Commande.findAll({
-        where: { id_utilisateur: userId },
-        limit: 3,
-        order: [["createdAt", "DESC"]],
-      });
+      const commandes = db.prepare('SELECT * FROM commandes WHERE id_utilisateur = ? ORDER BY created_at DESC LIMIT 3').all(userId);
 
       if (commandes.length > 0) {
         contexte += `
@@ -78,10 +74,7 @@ Commande #${cmd.id_commande}
     // PRODUITS DISPONIBLES
     // =========================
 
-    const produits = await Produit.findAll({
-      limit: 15,
-      order: [["createdAt", "DESC"]],
-    });
+    const produits = db.prepare('SELECT * FROM produits ORDER BY created_at DESC LIMIT 15').all();
 
     if (produits.length > 0) {
       contexte += `
@@ -92,8 +85,10 @@ Commande #${cmd.id_commande}
       produits.forEach((p) => {
         contexte += `
 Produit : ${p.titre}
+Catégorie : ${p.categorie}
 Prix : ${p.prix_xaf} FCFA
 Stock : ${p.stock}
+Description : ${p.description || 'Non disponible'}
 `;
       });
     }
@@ -119,58 +114,67 @@ Stock : ${p.stock}
     let botResponse = "";
 
     if (!process.env.COHERE_API_KEY) {
-      botResponse = "Je peux vous aider avec les produits, commandes, paiements et livraisons. L'assistant IA avancé n'est pas encore configuré.";
-    } else {
-      const response = await cohere.chat({
-        model: "command-r-plus",
+      return res.status(500).json({
+        success: false,
+        error: "Clé API Cohere non configurée",
+        message: "L'assistant IA n'est pas configuré. Veuillez contacter l'administrateur."
+      });
+    }
 
-        temperature: 0.4,
+    try {
+      const url = "https://api.cohere.ai/v1/chat";
+      const headers = {
+        "Authorization": `Bearer ${process.env.COHERE_API_KEY}`,
+        "Content-Type": "application/json"
+      };
 
-        preamble: `
-Tu es l'assistant intelligent officiel de Sport-Equip.
-
-Ton comportement :
-- professionnel
-- moderne
-- poli
-- rapide
-- intelligent
-
-Tu aides les clients concernant :
-- les produits
-- les commandes
-- les paiements
-- les livraisons
-- les promotions
-- les stocks
-- les points fidélité
-
-RÈGLES IMPORTANTES :
-- Toujours répondre en français
-- Utiliser UNIQUEMENT les données fournies
-- Ne jamais inventer de produits
-- Ne jamais inventer une commande
-- Si une information manque, le dire clairement
-- Répondre de manière concise
-- Utiliser des emojis modérément
-`,
-
-        chatHistory: conversations[userId].map((msg) => ({
+      const data = {
+        "model": "command-r-08-2024",
+        "chat_history": conversations[userId].map((msg) => ({
           role: msg.role,
           message: msg.message,
         })),
+        "message": `
+Tu es l'assistant intelligent officiel de Sport-Equip, une entreprise spécialisée dans la vente d'équipements sportifs.
 
-        message: `
 CONTEXTE :
 
 ${contexte}
 
+INSTRUCTIONS IMPORTANTES :
+- Tu travailles pour Sport-Equip
+- Réponds toujours en français
+- Sois professionnel, poli et serviable
+- Utilise les informations fournies dans le contexte pour répondre
+- Si une information n'est pas disponible dans le contexte, dis-le clairement
+- Ne jamais inventer de produits ou de prix
+- Aide les clients avec leurs questions sur les produits, commandes, livraisons et promotions
+
 QUESTION CLIENT :
 ${message}
-`,
-      });
+`
+      };
 
-      botResponse = response.text || response.message || "Je suis disponible pour vous aider.";
+      const response = await axios.post(url, data, { headers });
+      botResponse = response.data.text || response.data.message || "Je suis disponible pour vous aider.";
+    } catch (cohereError) {
+      console.error("ERREUR COHERE:", cohereError);
+      
+      // Vérifier si c'est une erreur de connexion
+      if (cohereError.code === 'ECONNREFUSED' || cohereError.code === 'ENOTFOUND' || cohereError.message.includes('network') || cohereError.message.includes('ECONN')) {
+        return res.status(503).json({
+          success: false,
+          error: "Pas de connexion internet",
+          message: "Désolé, je n'ai pas accès à internet pour communiquer avec l'IA. Veuillez vérifier votre connexion et réessayer."
+        });
+      }
+      
+      // Autres erreurs Cohere
+      return res.status(500).json({
+        success: false,
+        error: cohereError.message,
+        message: "Désolé, une erreur s'est produite lors de la communication avec l'IA. Veuillez réessayer."
+      });
     }
 
     // =========================
@@ -199,9 +203,10 @@ ${message}
     console.error(error.response.data);
   }
 
+  // En cas d'erreur, retourner une réponse de secours
   return res.json({
     success: true,
-    response: "Désolé, l'assistant IA avancé est momentanément indisponible. Vous pouvez consulter le catalogue, votre profil ou contacter l'administration pour votre demande.",
+    response: "Désolé, une erreur s'est produite. Je suis toujours là pour vous aider avec nos produits, commandes et promotions. N'hésitez pas à reformuler votre question ou à consulter notre catalogue.",
   });
 }
 };

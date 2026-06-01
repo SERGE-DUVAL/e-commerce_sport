@@ -1,17 +1,17 @@
-import React from 'react';
+/*import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import Home from './pages/Home';
-import Catalogue from './pages/Catalogue';
-import ProductDetail from './pages/ProductDetail';
-import Cart from './pages/Cart';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Profile from './pages/Profile';
-import AdminDashboard from './pages/AdminDashboard';
-import { CartProvider } from './context/CartContext';
-import { AuthProvider } from './context/AuthContext';
+import Header from './components/Header.jsx';
+import Footer from './components/Footer.jsx';
+import Home from './pages/Home.jsx';
+import Catalogue from './pages/Catalogue.jsx';
+import ProductDetail from './pages/ProductDetail.jsx';
+import Cart from './pages/Cart.jsx';
+import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
+import Profile from './pages/Profile.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
+import { CartProvider } from './context/CartContext.jsx';
+import { AuthProvider } from './context/AuthContext.jsx';
 
 function App() {
   return (
@@ -40,4 +40,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;*/
