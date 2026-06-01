@@ -1,7 +1,7 @@
+const crypto = require('crypto');
 const CodeBarre = require('../models/CodeBarre');
 const Produit = require('../models/Produit');
 const QRCode = require('qrcode');
-const { v4: uuidv4 } = require('uuid');
 
 // Générer un code-barres EAN13
 exports.generateEAN13 = (req, res) => {
@@ -37,7 +37,7 @@ exports.generateQRCode = async (req, res) => {
     const qrData = data || JSON.stringify({
       produit: id_produit,
       timestamp: new Date().toISOString(),
-      uuid: uuidv4()
+      uuid: crypto.randomUUID()
     });
 
     const qrCode = await QRCode.toDataURL(qrData);
