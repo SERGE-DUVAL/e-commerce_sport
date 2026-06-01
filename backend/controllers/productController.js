@@ -125,8 +125,8 @@ exports.createProduct = async (req, res) => {
 
     // Créer le code-barres pour le produit
     db.prepare(`
-      INSERT INTO codes_barres (id_produit, code_barre, type_code, created_at)
-      VALUES (?, ?, 'EAN13', datetime('now'))
+      INSERT INTO codes_barres (id_produit, code_barre, type_code, created_at, updated_at)
+      VALUES (?, ?, 'EAN13', datetime('now'), datetime('now'))
     `).run(produit.id_produit, ean13);
 
     res.status(201).json(produit);

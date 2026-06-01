@@ -1,32 +1,40 @@
-const db = require('../config/database');
-const { Utilisateur, Produit, Promotion } = require('../models');
+const Database = require('better-sqlite3');
+const path = require('path');
 const bcrypt = require('bcrypt');
+
+const db = new Database(path.join(__dirname, '../../sport-equip.sqlite'));
 
 async function seed() {
   try {
-    await db.sync({ force: true });
+    // Disable foreign keys for deletion
+    db.pragma('foreign_keys = OFF');
+
+    // Clear existing data
+    db.exec('DELETE FROM avis');
+    db.exec('DELETE FROM ligne_commandes');
+    db.exec('DELETE FROM commandes');
+    db.exec('DELETE FROM promotions');
+    db.exec('DELETE FROM produits');
+    db.exec('DELETE FROM utilisateurs');
+    
+    // Re-enable foreign keys
+    db.pragma('foreign_keys = ON');
+    
     console.log('Base de données réinitialisée');
 
     // Créer un admin
     const hashedPassword = await bcrypt.hash('admin123', 10);
-    await Utilisateur.create({
-      nom: 'Administrateur',
-      email: 'admin@sportequip.com',
-      mot_de_passe: hashedPassword,
-      role: 'admin',
-      points_fidelite: 0
-    });
+    db.prepare(`
+      INSERT INTO utilisateurs (nom, email, mot_de_passe, role, points_fidelite, created_at, updated_at)
+      VALUES (?, ?, ?, 'admin', 0, datetime('now'), datetime('now'))
+    `).run('Administrateur', 'admin@sportequip.com', hashedPassword);
 
     // Créer un client test
     const clientPassword = await bcrypt.hash('client123', 10);
-    await Utilisateur.create({
-      nom: 'Client Test',
-      email: 'client@test.com',
-      mot_de_passe: clientPassword,
-      role: 'client',
-      points_fidelite: 500,
-      adresse_livraison: 'Yaoundé, Cameroun'
-    });
+    db.prepare(`
+      INSERT INTO utilisateurs (nom, email, mot_de_passe, role, points_fidelite, adresse_livraison, created_at, updated_at)
+      VALUES (?, ?, ?, 'client', 500, ?, datetime('now'), datetime('now'))
+    `).run('Client Test', 'client@test.com', clientPassword, 'Yaoundé, Cameroun');
 
     // Créer 20 produits
     const produits = [
@@ -36,7 +44,7 @@ async function seed() {
         categorie: 'Football',
         prix_xaf: 25000,
         stock: 50,
-        variantes: { tailles: ['S', 'M', 'L', 'XL'], couleurs: ['Rouge', 'Bleu', 'Blanc'] }
+        variantes: JSON.stringify({ tailles: ['S', 'M', 'L', 'XL'], couleurs: ['Rouge', 'Bleu', 'Blanc'] })
       },
       {
         titre: 'Crampons Mercurial',
@@ -44,7 +52,7 @@ async function seed() {
         categorie: 'Football',
         prix_xaf: 45000,
         stock: 30,
-        variantes: { tailles: ['38', '39', '40', '41', '42', '43', '44'], couleurs: ['Noir', 'Blanc'] }
+        variantes: JSON.stringify({ tailles: ['38', '39', '40', '41', '42', '43', '44'], couleurs: ['Noir', 'Blanc'] })
       },
       {
         titre: 'Ballon Football Official',
@@ -52,7 +60,7 @@ async function seed() {
         categorie: 'Football',
         prix_xaf: 35000,
         stock: 25,
-        variantes: { tailles: ['4', '5'], couleurs: ['Blanc/Noir', 'Jaune'] }
+        variantes: JSON.stringify({ tailles: ['4', '5'], couleurs: ['Blanc/Noir', 'Jaune'] })
       },
       {
         titre: 'Gants Gardien Pro',
@@ -60,7 +68,7 @@ async function seed() {
         categorie: 'Football',
         prix_xaf: 18000,
         stock: 40,
-        variantes: { tailles: ['7', '8', '9', '10'], couleurs: ['Noir', 'Vert', 'Rouge'] }
+        variantes: JSON.stringify({ tailles: ['7', '8', '9', '10'], couleurs: ['Noir', 'Vert', 'Rouge'] })
       },
       {
         titre: 'Short Running Elite',
@@ -68,7 +76,7 @@ async function seed() {
         categorie: 'Running',
         prix_xaf: 15000,
         stock: 60,
-        variantes: { tailles: ['S', 'M', 'L', 'XL'], couleurs: ['Noir', 'Bleu', 'Gris'] }
+        variantes: JSON.stringify({ tailles: ['S', 'M', 'L', 'XL'], couleurs: ['Noir', 'Bleu', 'Gris'] })
       },
       {
         titre: 'Chaussures Running Ultra',
@@ -76,7 +84,7 @@ async function seed() {
         categorie: 'Running',
         prix_xaf: 55000,
         stock: 35,
-        variantes: { tailles: ['38', '39', '40', '41', '42', '43', '44'], couleurs: ['Noir', 'Blanc', 'Rouge'] }
+        variantes: JSON.stringify({ tailles: ['38', '39', '40', '41', '42', '43', '44'], couleurs: ['Noir', 'Blanc', 'Rouge'] })
       },
       {
         titre: 'T-shirt Technique Dry',
@@ -84,7 +92,7 @@ async function seed() {
         categorie: 'Running',
         prix_xaf: 12000,
         stock: 80,
-        variantes: { tailles: ['S', 'M', 'L', 'XL'], couleurs: ['Blanc', 'Noir', 'Bleu', 'Jaune'] }
+        variantes: JSON.stringify({ tailles: ['S', 'M', 'L', 'XL'], couleurs: ['Blanc', 'Noir', 'Bleu', 'Jaune'] })
       },
       {
         titre: 'Montre GPS Running',
@@ -92,7 +100,7 @@ async function seed() {
         categorie: 'Running',
         prix_xaf: 75000,
         stock: 20,
-        variantes: { tailles: ['Unique'], couleurs: ['Noir', 'Blanc'] }
+        variantes: JSON.stringify({ tailles: ['Unique'], couleurs: ['Noir', 'Blanc'] })
       },
       {
         titre: 'Haltères Réglables 20kg',
@@ -100,7 +108,7 @@ async function seed() {
         categorie: 'Fitness',
         prix_xaf: 65000,
         stock: 15,
-        variantes: { tailles: ['Unique'], couleurs: ['Noir', 'Rouge'] }
+        variantes: JSON.stringify({ tailles: ['Unique'], couleurs: ['Noir', 'Rouge'] })
       },
       {
         titre: 'Tapis de Yoga Premium',
@@ -108,7 +116,7 @@ async function seed() {
         categorie: 'Fitness',
         prix_xaf: 22000,
         stock: 45,
-        variantes: { tailles: ['Unique'], couleurs: ['Bleu', 'Rose', 'Vert', 'Violet'] }
+        variantes: JSON.stringify({ tailles: ['Unique'], couleurs: ['Bleu', 'Rose', 'Vert', 'Violet'] })
       },
       {
         titre: 'Elastique Résistance',
@@ -116,7 +124,7 @@ async function seed() {
         categorie: 'Fitness',
         prix_xaf: 8000,
         stock: 100,
-        variantes: { tailles: ['Léger', 'Moyen', 'Fort'], couleurs: ['Jaune', 'Rouge', 'Bleu'] }
+        variantes: JSON.stringify({ tailles: ['Léger', 'Moyen', 'Fort'], couleurs: ['Jaune', 'Rouge', 'Bleu'] })
       },
       {
         titre: 'Step Aerobic',
@@ -124,7 +132,7 @@ async function seed() {
         categorie: 'Fitness',
         prix_xaf: 35000,
         stock: 25,
-        variantes: { tailles: ['Unique'], couleurs: ['Gris', 'Noir'] }
+        variantes: JSON.stringify({ tailles: ['Unique'], couleurs: ['Gris', 'Noir'] })
       },
       {
         titre: 'Raquette Tennis Pro',
@@ -132,7 +140,7 @@ async function seed() {
         categorie: 'Tennis',
         prix_xaf: 85000,
         stock: 20,
-        variantes: { tailles: ['Unique'], couleurs: ['Rouge', 'Bleu', 'Noir'] }
+        variantes: JSON.stringify({ tailles: ['Unique'], couleurs: ['Rouge', 'Bleu', 'Noir'] })
       },
       {
         titre: 'Balle Tennis 3-pack',
@@ -140,7 +148,7 @@ async function seed() {
         categorie: 'Tennis',
         prix_xaf: 12000,
         stock: 70,
-        variantes: { tailles: ['Unique'], couleurs: ['Jaune/Vert'] }
+        variantes: JSON.stringify({ tailles: ['Unique'], couleurs: ['Jaune/Vert'] })
       },
       {
         titre: 'Sac Tennis Tour',
@@ -148,7 +156,7 @@ async function seed() {
         categorie: 'Tennis',
         prix_xaf: 40000,
         stock: 30,
-        variantes: { tailles: ['Unique'], couleurs: ['Noir', 'Rouge', 'Bleu'] }
+        variantes: JSON.stringify({ tailles: ['Unique'], couleurs: ['Noir', 'Rouge', 'Bleu'] })
       },
       {
         titre: 'Chaussures Basketball Air',
@@ -156,7 +164,7 @@ async function seed() {
         categorie: 'Basketball',
         prix_xaf: 60000,
         stock: 25,
-        variantes: { tailles: ['40', '41', '42', '43', '44', '45'], couleurs: ['Noir/Rouge', 'Blanc/Bleu'] }
+        variantes: JSON.stringify({ tailles: ['40', '41', '42', '43', '44', '45'], couleurs: ['Noir/Rouge', 'Blanc/Bleu'] })
       },
       {
         titre: 'Ballon Basketball Official',
@@ -164,7 +172,7 @@ async function seed() {
         categorie: 'Basketball',
         prix_xaf: 28000,
         stock: 35,
-        variantes: { tailles: ['6', '7'], couleurs: ['Orange', 'Marron'] }
+        variantes: JSON.stringify({ tailles: ['6', '7'], couleurs: ['Orange', 'Marron'] })
       },
       {
         titre: 'Maillot Basketball Jersey',
@@ -172,7 +180,7 @@ async function seed() {
         categorie: 'Basketball',
         prix_xaf: 20000,
         stock: 50,
-        variantes: { tailles: ['S', 'M', 'L', 'XL'], couleurs: ['Rouge', 'Bleu', 'Noir', 'Blanc'] }
+        variantes: JSON.stringify({ tailles: ['S', 'M', 'L', 'XL'], couleurs: ['Rouge', 'Bleu', 'Noir', 'Blanc'] })
       },
       {
         titre: 'Protège-Tibia Pro',
@@ -180,7 +188,7 @@ async function seed() {
         categorie: 'Football',
         prix_xaf: 10000,
         stock: 60,
-        variantes: { tailles: ['S', 'M', 'L'], couleurs: ['Noir', 'Blanc', 'Bleu'] }
+        variantes: JSON.stringify({ tailles: ['S', 'M', 'L'], couleurs: ['Noir', 'Blanc', 'Bleu'] })
       },
       {
         titre: 'Gourde Isotermique 1L',
@@ -188,27 +196,31 @@ async function seed() {
         categorie: 'Running',
         prix_xaf: 15000,
         stock: 55,
-        variantes: { tailles: ['Unique'], couleurs: ['Noir', 'Bleu', 'Rouge', 'Vert'] }
+        variantes: JSON.stringify({ tailles: ['Unique'], couleurs: ['Noir', 'Bleu', 'Rouge', 'Vert'] })
       }
     ];
 
-    await Produit.bulkCreate(produits);
+    const insertProduit = db.prepare(`
+      INSERT INTO produits (titre, description, categorie, prix_xaf, stock, variantes, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+    `);
+
+    produits.forEach(p => {
+      insertProduit.run(p.titre, p.description, p.categorie, p.prix_xaf, p.stock, p.variantes);
+    });
+
     console.log('20 produits créés avec succès');
 
     // Créer des promotions
-    await Promotion.create({
-      code: 'KEYCE20',
-      pourcentage_remise: 20,
-      est_active: true,
-      date_expiration: new Date('2026-12-31')
-    });
+    db.prepare(`
+      INSERT INTO promotions (code, pourcentage_remise, est_active, date_expiration, created_at, updated_at)
+      VALUES (?, ?, 1, ?, datetime('now'), datetime('now'))
+    `).run('KEYCE20', 20, '2026-12-31');
 
-    await Promotion.create({
-      code: 'SOMMER10',
-      pourcentage_remise: 10,
-      est_active: true,
-      date_expiration: new Date('2026-08-31')
-    });
+    db.prepare(`
+      INSERT INTO promotions (code, pourcentage_remise, est_active, date_expiration, created_at, updated_at)
+      VALUES (?, ?, 1, ?, datetime('now'), datetime('now'))
+    `).run('SOMMER10', 10, '2026-08-31');
 
     console.log('Promotions créées avec succès');
     console.log('Seed terminé avec succès!');

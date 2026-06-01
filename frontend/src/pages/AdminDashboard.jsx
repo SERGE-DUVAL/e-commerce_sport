@@ -12,7 +12,7 @@ import { inventoryAPI } from '../api/inventory';
 import { zoneAPI } from '../api/zones';
 import { cashAPI } from '../api/cash';
 import { creditAPI } from '../api/credits';
-// import Chatbot, { ChatbotButton } from '../components/Chatbot';
+import Chatbot from '../components/Chatbot';
 
 const emptyProduct = {
   titre: '',
@@ -2442,7 +2442,143 @@ const AdminDashboard = () => {
       </Modal>
       
       <Chatbot show={showChatbot} onClose={() => setShowChatbot(false)} />
-      <ChatbotButton onClick={() => setShowChatbot(!showChatbot)} isOpen={showChatbot} />
+      
+      <style>{`
+        .modal-content {
+          background-color: #ffffff !important;
+        }
+        .modal-body {
+          color: #212529 !important;
+        }
+        .modal-body label {
+          color: #212529 !important;
+          font-weight: 500;
+        }
+        .modal-body input,
+        .modal-body textarea,
+        .modal-body select {
+          background-color: #ffffff !important;
+          color: #212529 !important;
+          border: 1px solid #ced4da;
+        }
+        .modal-body input::placeholder,
+        .modal-body textarea::placeholder {
+          color: #6c757d !important;
+        }
+        .modal-body p,
+        .modal-body h5,
+        .modal-body div {
+          color: #212529 !important;
+        }
+        .modal-header {
+          background-color: #f8f9fa;
+          border-bottom: 1px solid #dee2e6;
+        }
+        .modal-title {
+          color: #212529 !important;
+        }
+        .btn-close {
+          color: #212529 !important;
+        }
+        .table {
+          color: #212529 !important;
+        }
+        .table thead th {
+          background-color: #f8f9fa;
+          color: #212529 !important;
+          border-bottom: 2px solid #dee2e6;
+          font-weight: 600;
+          text-transform: uppercase;
+          font-size: 0.85rem;
+          letter-spacing: 0.5px;
+        }
+        .table tbody td {
+          color: #212529 !important;
+          border-bottom: 1px solid #dee2e6;
+          vertical-align: middle;
+        }
+        .table tbody tr:hover {
+          background-color: #f8f9fa !important;
+        }
+        .admin-table {
+          margin-top: 1rem;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        .admin-table thead {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white !important;
+        }
+        .admin-table thead th {
+          color: white !important;
+          border: none;
+          padding: 12px;
+        }
+        .admin-table tbody {
+          background-color: #ffffff;
+        }
+        .admin-table tbody td {
+          padding: 12px;
+          border-bottom: 1px solid #e9ecef;
+        }
+        .admin-table tbody tr:nth-child(even) {
+          background-color: #f8f9fa;
+        }
+        .admin-table tbody tr:hover {
+          background-color: #e9ecef !important;
+          transform: scale(1.01);
+          transition: all 0.2s ease;
+        }
+        .card {
+          background-color: #ffffff;
+          border: 1px solid #dee2e6;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          border-radius: 12px;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+        .card-body {
+          color: #212529 !important;
+        }
+        .card-title {
+          color: #212529 !important;
+          font-weight: 600;
+          margin-bottom: 1rem;
+        }
+        .form-label {
+          color: #212529 !important;
+          font-weight: 500;
+        }
+        .form-control {
+          background-color: #ffffff !important;
+          color: #212529 !important;
+          border: 1px solid #ced4da;
+        }
+        .form-control:focus {
+          background-color: #ffffff !important;
+          color: #212529 !important;
+          border-color: #86b7fe;
+          box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        .form-select {
+          background-color: #ffffff !important;
+          color: #212529 !important;
+          border: 1px solid #ced4da;
+        }
+        .alert {
+          color: #212529 !important;
+        }
+        .badge {
+          color: #ffffff !important;
+          padding: 0.5rem 0.75rem;
+          border-radius: 0.375rem;
+          font-weight: 500;
+        }
+      `}</style>
     </Container>
   );
 };
