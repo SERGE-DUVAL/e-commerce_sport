@@ -1,12 +1,19 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Database = require('better-sqlite3');
 const path = require('path');
+
+let stripe;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+}
 
 // Base de données directe avec better-sqlite3
 const db = new Database(path.join(__dirname, '../../sport-equip.sqlite'));
 
 // Créer une session de paiement Stripe
 exports.createPaymentSession = async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ success: false, error: 'Stripe non configuré' });
+  }
   try {
     const { items, orderId } = req.body;
 
@@ -58,6 +65,9 @@ exports.createPaymentSession = async (req, res) => {
 
 // Vérifier le statut d'une session de paiement
 exports.checkPaymentStatus = async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ success: false, error: 'Stripe non configuré' });
+  }
   try {
     const { sessionId } = req.params;
 
@@ -86,6 +96,9 @@ exports.checkPaymentStatus = async (req, res) => {
 
 // Webhook Stripe pour confirmer le paiement
 exports.webhook = async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ success: false, error: 'Stripe non configuré' });
+  }
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
