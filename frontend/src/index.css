@@ -16,6 +16,27 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
 ::selection {
   background: #2563eb;
   color: #ffffff;
@@ -310,21 +331,22 @@ html {
   border-radius: 12px;
   overflow: hidden;
   background: #ffffff;
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
   cursor: pointer;
+  transform-style: preserve-3d;
 }
 
 .product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-14px) rotateX(6deg) rotateY(-4deg);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.18);
 }
 
 .product-card img {
-  transition: transform 0.3s;
+  transition: transform 0.4s ease;
 }
 
 .product-card:hover img {
-  transform: scale(1.03);
+  transform: scale(1.06);
 }
 
 .product-card .card-footer {
@@ -398,14 +420,15 @@ html {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   background: #ffffff;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
   text-align: center;
   padding: 24px;
+  transform-style: preserve-3d;
 }
 
 .benefit-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transform: translateY(-12px) rotateX(7deg) rotateY(-3deg);
+  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.14);
 }
 
 .benefit-icon {
@@ -446,16 +469,22 @@ html {
   overflow: hidden;
   min-height: 360px;
   padding: 32px;
-  border-radius: 12px;
+  border-radius: 16px;
   color: #ffffff;
   background: linear-gradient(135deg, #0f172a, #334155);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.6s ease;
+  transform-style: preserve-3d;
 }
 
-.showcase-large:hover,
+.showcase-large:hover {
+  transform: translateY(-20px) rotateX(8deg) rotateY(-5deg) scale(1.03);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
 .showcase-small:hover {
-  transform: translateY(-4px);
+  transform: translateY(-18px) rotateX(10deg) rotateY(-8deg) scale(1.05);
+  box-shadow: 0 35px 70px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .showcase-large span {
@@ -777,19 +806,26 @@ html {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
   color: #ffffff;
+  transform-style: preserve-3d;
+  perspective: 800px;
 }
 
 .category-3d-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  transform: translateY(-16px) rotateX(8deg) rotateY(-6deg);
+  box-shadow: 0 35px 70px rgba(0, 0, 0, 0.4);
 }
 
 .category-photo {
   min-height: 160px;
   background-size: cover;
   background-position: center;
+  transition: transform 0.5s ease;
+}
+
+.category-3d-card:hover .category-photo {
+  transform: scale(1.08);
 }
 
 .category-icon {
@@ -817,13 +853,14 @@ html {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   background: #ffffff;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
+  transform-style: preserve-3d;
 }
 
 .feature-card:hover,
 .auth-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transform: translateY(-12px) rotateX(6deg) rotateY(4deg);
+  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.15);
 }
 
 .feature-icon {
@@ -837,11 +874,11 @@ html {
   font-size: 1.4rem;
   background: #eff6ff;
   color: #2563eb;
-  transition: none;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .feature-card:hover .feature-icon {
-  transform: none;
+  transform: rotateY(180deg) scale(1.1);
 }
 
 .timeline-pro {
@@ -919,6 +956,7 @@ html {
 .catalogue-header {
   text-align: center;
   margin-bottom: 32px;
+  animation: fadeInDown 0.6s ease-out;
 }
 
 .catalogue-title {
@@ -1065,8 +1103,17 @@ html {
 }
 
 .product-col {
-  animation: none;
+  animation: fadeInUp 0.5s ease-out both;
 }
+
+.product-col:nth-child(1) { animation-delay: 0.05s; }
+.product-col:nth-child(2) { animation-delay: 0.1s; }
+.product-col:nth-child(3) { animation-delay: 0.15s; }
+.product-col:nth-child(4) { animation-delay: 0.2s; }
+.product-col:nth-child(5) { animation-delay: 0.25s; }
+.product-col:nth-child(6) { animation-delay: 0.3s; }
+.product-col:nth-child(7) { animation-delay: 0.35s; }
+.product-col:nth-child(8) { animation-delay: 0.4s; }
 
 /* Cart */
 .cart-page {
@@ -1347,13 +1394,15 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, transform 0.15s;
-  animation: none;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  animation: pulse 2.5s ease-in-out infinite;
 }
 
 .chatbot-toggle:hover {
   background: #1d4ed8;
-  transform: scale(1.05);
+  transform: scale(1.1);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+  animation: none;
 }
 
 .chatbot-toggle svg {
