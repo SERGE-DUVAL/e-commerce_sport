@@ -85,17 +85,17 @@ const Catalogue = () => {
   const sortedProducts = sortProducts(products);
 
   return (
-    <Container className="py-5 catalogue-page" style={{ color: '#000' }}>
+    <Container className="py-5 catalogue-page">
       <div className="catalogue-header mb-4">
-        <h1 className="catalogue-title" style={{ color: '#000' }}>Catalogue</h1>
-        <p className="catalogue-subtitle" style={{ color: '#000' }}>Découvrez notre sélection d'équipements sportifs premium</p>
+        <h1 className="catalogue-title">Catalogue</h1>
+        <p className="catalogue-subtitle">Découvrez notre sélection d'équipements sportifs</p>
       </div>
 
       {/* Filtres avancés */}
-      <Card className="mb-4 filter-card" style={{ color: '#000' }}>
+      <Card className="mb-4 filter-card">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="mb-0" style={{ color: '#000' }}><FaFilter /> Filtres</h5>
+            <h5 className="mb-0"><FaFilter className="me-2" />Filtres</h5>
             <div className="d-flex gap-2">
               <Button 
                 variant={viewMode === 'grid' ? 'primary' : 'outline-primary'} 
@@ -124,14 +124,14 @@ const Catalogue = () => {
                   className="filter-select"
                 >
                   <option value="">Toutes les catégories</option>
-                  <option value="Football">⚽ Football</option>
-                  <option value="Running">🏃 Running</option>
-                  <option value="Fitness">🏋️ Fitness</option>
-                  <option value="Tennis">🎾 Tennis</option>
-                  <option value="Basketball">🏀 Basketball</option>
-                  <option value="Natation">🏊 Natation</option>
-                  <option value="Cyclisme">🚴 Cyclisme</option>
-                  <option value="Boxe">🥊 Boxe</option>
+                  <option value="Football">Football</option>
+                  <option value="Running">Running</option>
+                  <option value="Fitness">Fitness</option>
+                  <option value="Tennis">Tennis</option>
+                  <option value="Basketball">Basketball</option>
+                  <option value="Natation">Natation</option>
+                  <option value="Cyclisme">Cyclisme</option>
+                  <option value="Boxe">Boxe</option>
                 </Form.Select>
               </Form.Group>
             </Col>

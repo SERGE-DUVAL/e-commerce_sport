@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Form, Modal, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { FaBolt, FaChartLine, FaCreditCard, FaDumbbell, FaRobot, FaShieldAlt, FaShippingFast, FaStar, FaMapMarkerAlt, FaCloudSun, FaTruck, FaShoppingCart, FaFire, FaTrophy, FaHeadset } from 'react-icons/fa';
+import { FaBolt, FaCreditCard, FaDumbbell, FaShieldAlt, FaShippingFast, FaStar, FaMapMarkerAlt, FaCloudSun, FaTruck, FaShoppingCart, FaRobot } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { deliveryAPI } from '../api/delivery';
 import { productAPI } from '../services/api';
@@ -18,7 +18,6 @@ const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
 
-  // Coordonnées des villes
   const cities = {
     yaounde: { lat: 3.8488, lon: 11.5028, name: 'Yaoundé' },
     douala: { lat: 4.0483, lon: 9.7043, name: 'Douala' }
@@ -79,109 +78,84 @@ const Home = () => {
     {
       title: 'Football',
       text: 'Maillots, crampons, ballons et accessoires de performance.',
-      icon: '⚽',
       image: '/images2/Foot2.jfif'
     },
     {
       title: 'Running',
       text: 'Chaussures, textiles respirants, montres et équipements cardio.',
-      icon: '🏃',
       image: '/images2/running.jfif'
     },
     {
       title: 'Fitness',
       text: 'Haltères, tapis, élastiques et matériel de renforcement.',
-      icon: '🏋️',
       image: '/images2/Fitness1.jfif'
     },
     {
       title: 'Tennis',
       text: 'Raquettes, balles, sacs et accessoires pour progresser.',
-      icon: '🎾',
       image: '/images2/tennis2.jfif'
     },
     {
       title: 'Basketball',
       text: 'Chaussures montantes, ballons, jerseys et protections.',
-      icon: '🏀',
       image: '/images2/basketball.jfif'
     },
     {
       title: 'Cyclisme',
       text: 'Casques, gants, gourdes, maillots et accessoires vélo.',
-      icon: '🚴',
       image: '/images2/cyclisme1.jfif'
     },
     {
       title: 'Natation',
       text: 'Lunettes, bonnets, maillots et équipements aquatiques.',
-      icon: '🏊',
       image: '/images2/Natation.jfif'
     },
     {
       title: 'Boxe',
       text: 'Gants, bandages, sacs de frappe et protections.',
-      icon: '🥊',
       image: '/images2/Boxe.jfif'
     }
   ];
 
   const benefits = [
     { icon: <FaCreditCard />, title: 'Paiement Mobile Local', text: 'Payez facilement avec Switch, Orange Money et MTN MoMo' },
-    { icon: <FaRobot />, title: 'Assistant IA Intelligent', text: 'Chatbot connecté à votre base pour vous aider 24/7' },
+    { icon: <FaShieldAlt />, title: 'Assistant Intelligent', text: 'Chatbot connecté à votre base pour vous aider 24/7' },
     { icon: <FaStar />, title: 'Avis Certifiés', text: 'Notes vérifiées uniquement après livraison effective' },
     { icon: <FaShippingFast />, title: 'Livraison Rapide', text: 'Suivi GPS en temps réel et livraison express' }
   ];
 
   return (
     <div className="landing-page">
-      <section className="hero-pro">
-        <div className="hero-glow hero-glow-one" />
-        <div className="hero-glow hero-glow-two" />
+      <section className="hero-pro" style={{ background: `linear-gradient(135deg, rgba(15,23,42,0.82), rgba(30,41,59,0.78)), url('/images2/running.jfif') center/cover no-repeat` }}>
         <Container>
-          <Row className="align-items-center g-5">
-            <Col lg={6} className="hero-copy">
+          <Row>
+            <Col lg={8} className="hero-copy">
               <span className="eyebrow"><FaBolt /> Équipements sportifs de qualité</span>
-              <h1>Équipez-vous pour le sport avec Sport-Equip</h1>
+              <h1>L'équipement qu'il vous faut, au meilleur prix</h1>
               <p>
-                Découvrez notre gamme d'équipements sportifs : crampons, chaussures de running, haltères, raquettes de tennis et accessoires.
-                Paiement mobile sécurisé, livraison rapide et programme de fidélité.
+                Crampons, chaussures de running, haltères, raquettes de tennis — tout pour performer.
+                Paiement mobile sécurisé, livraison rapide au Cameroun et programme de fidélité.
               </p>
               <div className="hero-actions">
                 <Button as={Link} to="/catalogue" className="btn-neon" size="lg">
-                  <FaShoppingCart /> Voir le catalogue
+                  <FaShoppingCart className="me-2" /> Voir le catalogue
                 </Button>
                 {!user && (
-                  <Button as={Link} to="/connexion" variant="outline-light" size="lg" className="btn-glass">
+                  <Button as={Link} to="/inscription" variant="outline-light" size="lg" className="btn-glass">
                     Créer un compte
                   </Button>
                 )}
               </div>
               <div className="hero-metrics">
-                <div><strong>20+</strong><span>Produits disponibles</span></div>
-                <div><strong>FCFA</strong><span>Devise locale</span></div>
-                <div><strong>IA</strong><span>Assistant disponible</span></div>
-              </div>
-            </Col>
-            <Col lg={6}>
-              <div className="sport-3d-stage">
-                <div className="orbit-ring orbit-one" />
-                <div className="orbit-ring orbit-two" />
-                <div className="sport-card-3d main-card">
-                  <div className="shoe-shape">🏆</div>
-                  <h3>Excellence Sportive</h3>
-                  <p>Équipements professionnels pour atteindre vos objectifs.</p>
-                </div>
-                <div className="floating-chip chip-one"><FaShippingFast /> Livraison express</div>
-                <div className="floating-chip chip-two"><FaShieldAlt /> Paiement sécurisé</div>
-                <div className="floating-chip chip-three"><FaDumbbell /> Stock disponible</div>
+                <div><strong>20+</strong><span>Produits</span></div>
+                <div><strong>5</strong><span>Catégories</span></div>
+                <div><strong>24/7</strong><span>Support</span></div>
               </div>
             </Col>
           </Row>
         </Container>
       </section>
 
-      {/* Featured Products Section */}
       <section className="featured-products-section">
         <Container>
           <div className="section-heading">
@@ -199,10 +173,10 @@ const Home = () => {
                 <Col md={6} lg={3} key={product.id_produit}>
                   <Card className="product-card h-100">
                     <div className="product-image-wrapper">
-                      <Card.Img 
-                        variant="top" 
-                        src={categoryImages[product.categorie] || '/images2/default.jpg'} 
-                        alt={product.titre} 
+                      <Card.Img
+                        variant="top"
+                        src={categoryImages[product.categorie] || '/images2/default.jpg'}
+                        alt={product.titre}
                       />
                       {product.stock > 0 && (
                         <Badge className="stock-badge" bg="success">En stock</Badge>
@@ -229,13 +203,12 @@ const Home = () => {
           )}
           <div className="text-center mt-4">
             <Button as={Link} to="/catalogue" variant="outline-primary" size="lg">
-              Voir tous les produits <FaShoppingCart className="ms-2" />
+              Voir tous les produits
             </Button>
           </div>
         </Container>
       </section>
 
-      {/* Benefits Section */}
       <section className="benefits-section">
         <Container>
           <div className="section-heading">
@@ -292,8 +265,8 @@ const Home = () => {
       <section className="weather-gps-section">
         <Container>
           <div className="section-heading">
-            <span>Services de livraison intelligente</span>
-            <h2>Suivez la météo et la disponibilité des livreurs en temps réel avec suivi GPS intégré.</h2>
+            <span>Services de livraison</span>
+            <h2>Suivez la météo et la disponibilité des livreurs en temps réel</h2>
           </div>
           <Row className="g-4">
             <Col md={6} lg={3}>
@@ -386,14 +359,10 @@ const Home = () => {
                     <div className="feature-icon gps-icon"><FaMapMarkerAlt /></div>
                   </div>
                   <Card.Title>Suivi GPS en temps réel</Card.Title>
-                  <Card.Text className="feature-description">
+                  <p className="feature-description">
                     Localisez vos livraisons en temps réel grâce à notre système de suivi GPS intégré.
-                    Les livreurs sont géolocalisés pour une meilleure visibilité sur votre commande.
-                  </Card.Text>
-                  <div className="feature-visual">
-                    <div className="gps-pulse"></div>
-                    <div className="gps-pulse gps-pulse-2"></div>
-                  </div>
+                    Les livreurs sont géolocalisés pour une meilleure visibilité.
+                  </p>
                 </Card.Body>
               </Card>
             </Col>
@@ -404,14 +373,10 @@ const Home = () => {
                     <div className="feature-icon forecast-icon"><FaCloudSun /></div>
                   </div>
                   <Card.Title>Prévisions météo</Card.Title>
-                  <Card.Text className="feature-description">
+                  <p className="feature-description">
                     Consultez les conditions météo pour optimiser vos livraisons.
-                    Notre système intègre les données météo pour planifier les tournées et éviter les intempéries.
-                  </Card.Text>
-                  <div className="feature-visual">
-                    <div className="weather-pulse"></div>
-                    <div className="weather-pulse weather-pulse-2"></div>
-                  </div>
+                    Notre système intègre les données météo pour planifier les tournées.
+                  </p>
                 </Card.Body>
               </Card>
             </Col>
@@ -423,25 +388,24 @@ const Home = () => {
         <Container>
           <div className="section-heading">
             <span>Univers sportifs</span>
-            <h2>Des catégories pensées pour les athlètes et passionnés.</h2>
+            <h2>Des catégories pensées pour les athlètes et passionnés</h2>
           </div>
           <Row className="g-4">
             {categories.map((cat) => (
               <Col md={6} lg={3} key={cat.title}>
                 <Card className="category-3d-card h-100">
                   <div className="category-photo" style={{ backgroundImage: `url(${cat.image})` }} />
-                <Card.Body>
-                    <div className="category-icon">{cat.icon}</div>
+                  <Card.Body>
                     <Card.Title>{cat.title}</Card.Title>
                     <Card.Text>{cat.text}</Card.Text>
-                    <Button as={Link} to={`/catalogue?categorie=${cat.title}`} variant="outline-light">
+                    <Button as={Link} to={`/catalogue?categorie=${cat.title}`} variant="outline-light" size="sm">
                       Explorer
                     </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
         </Container>
       </section>
 
@@ -452,7 +416,7 @@ const Home = () => {
               <Col lg={5}>
                 <div className="section-heading text-start">
                   <span>Parcours utilisateur</span>
-                  <h2>Connectez-vous, achetez, payez et suivez vos commandes.</h2>
+                  <h2>Connectez-vous, achetez, payez et suivez vos commandes</h2>
                   <p>
                     Après connexion, les clients accèdent à leur espace, panier, historique et points.
                     Les administrateurs sont redirigés vers le tableau de bord de gestion.
@@ -467,7 +431,7 @@ const Home = () => {
                   <div><strong>01</strong><span>Connexion sécurisée JWT</span></div>
                   <div><strong>02</strong><span>Choix des produits et variantes</span></div>
                   <div><strong>03</strong><span>Paiement Mobile Money via Switch</span></div>
-                  <div><strong>04</strong><span>Points fidélité et suivi par IA</span></div>
+                  <div><strong>04</strong><span>Points fidélité et suivi de commande</span></div>
                 </div>
               </Col>
             </Row>
@@ -476,7 +440,7 @@ const Home = () => {
       )}
 
       <Modal show={showHelpModal} onHide={() => setShowHelpModal(false)}>
-        <Modal.Header closeButton><Modal.Title><FaRobot /> Aide et guide visiteur</Modal.Title></Modal.Header>
+        <Modal.Header closeButton><Modal.Title>Aide et guide visiteur</Modal.Title></Modal.Header>
         <Modal.Body>
           <h5>Comment utiliser Sport-Equip ?</h5>
           <ol>
@@ -486,12 +450,12 @@ const Home = () => {
             <li>Payez via Mobile Money (Switch, Orange Money, MTN MoMo)</li>
             <li>Suivez vos colis depuis votre profil</li>
           </ol>
-          <p className="mt-3">Pour toute assistance, utilisez le chatbot IA disponible sur le site.</p>
+          <p className="mt-3">Pour toute assistance, utilisez le chatbot disponible sur le site.</p>
         </Modal.Body>
       </Modal>
 
       <Modal show={showPrivacyModal} onHide={() => setShowPrivacyModal(false)}>
-        <Modal.Header closeButton><Modal.Title><FaShieldAlt /> Politique de confidentialité</Modal.Title></Modal.Header>
+        <Modal.Header closeButton><Modal.Title>Politique de confidentialité</Modal.Title></Modal.Header>
         <Modal.Body>
           <h5>Protection de vos données</h5>
           <p>Vos informations servent uniquement à :</p>

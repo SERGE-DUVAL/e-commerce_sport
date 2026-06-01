@@ -1,0 +1,19 @@
+{
+  "name": "sport-equip",
+  "version": "1.0.0",
+  "description": "E-commerce Sport-Equip - Équipements sportifs",
+  "main": "backend/server.js",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd backend && node server.js",
+    "dev": "cd backend && npm run dev",
+    "seed": "cd backend && node seeds/seed.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SERGE-DUVAL/e-commerce_sport.git"
+  },
+  "author": "Groupe 3",
+  "license": "ISC"
+}

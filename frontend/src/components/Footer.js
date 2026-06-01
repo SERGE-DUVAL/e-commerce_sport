@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Modal, Button } from 'react-bootstrap';
-import { FaRobot, FaShieldAlt, FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaMapMarkerAlt, FaPhone, FaEnvelope, FaDumbbell } from 'react-icons/fa';
+import { FaShieldAlt, FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaMapMarkerAlt, FaPhone, FaEnvelope, FaDumbbell } from 'react-icons/fa';
 
 const Footer = () => {
   const [showAbout, setShowAbout] = useState(false);
@@ -19,7 +19,7 @@ const Footer = () => {
                 <div className="brand-mark">SE</div>
                 <h4>Sport-Equip</h4>
                 <p className="mt-3">
-                  Votre destination premium pour l'équipement sportif en Afrique. 
+                  Votre destination pour l'équipement sportif en Afrique.
                   Qualité professionnelle, livraison rapide et paiement mobile sécurisé.
                 </p>
                 <div className="footer-social mt-4">
@@ -54,8 +54,8 @@ const Footer = () => {
               <ul className="list-unstyled footer-links">
                 <li><button type="button" onClick={() => setShowAbout(true)}>À propos</button></li>
                 <li><button type="button" onClick={() => setShowContact(true)}>Contact</button></li>
-                <li><button type="button" onClick={() => setShowHelp(true)}><FaRobot /> Aide</button></li>
-                <li><button type="button" onClick={() => setShowPrivacy(true)}><FaShieldAlt /> Confidentialité</button></li>
+                <li><button type="button" onClick={() => setShowHelp(true)}>Aide</button></li>
+                <li><button type="button" onClick={() => setShowPrivacy(true)}>Confidentialité</button></li>
                 <li><button type="button" onClick={() => setShowTerms(true)}>Conditions</button></li>
               </ul>
             </Col>
@@ -93,11 +93,11 @@ const Footer = () => {
             <li>Paiement mobile sécurisé (Switch, Orange Money, MTN MoMo)</li>
             <li>Livraison rapide avec suivi GPS en temps réel</li>
             <li>Programme de fidélité pour récompenser nos clients</li>
-            <li>Assistant IA disponible 24/7 pour vous aider</li>
+            <li>Assistant disponible 24/7 pour vous aider</li>
           </ul>
         </Modal.Body>
         <Modal.Footer>
-          <Button className="btn-neon" onClick={() => setShowAbout(false)}>Fermer</Button>
+          <Button variant="primary" onClick={() => setShowAbout(false)}>Fermer</Button>
         </Modal.Footer>
       </Modal>
 
@@ -110,15 +110,15 @@ const Footer = () => {
           <p><strong>Email :</strong> contact@sportequip.com</p>
           <p><strong>Téléphone :</strong> +237 600 000 000</p>
           <p><strong>Heures d'ouverture :</strong> Lundi - Samedi, 8h - 18h</p>
-          <p className="mt-3">Notre équipe est disponible pour répondre à toutes vos questions concernant nos produits, commandes et services.</p>
+          <p className="mt-3">Notre équipe est disponible pour répondre à toutes vos questions.</p>
         </Modal.Body>
         <Modal.Footer>
-          <Button className="btn-neon" onClick={() => setShowContact(false)}>Fermer</Button>
+          <Button variant="primary" onClick={() => setShowContact(false)}>Fermer</Button>
         </Modal.Footer>
       </Modal>
 
       <Modal show={showHelp} onHide={() => setShowHelp(false)} centered>
-        <Modal.Header closeButton><Modal.Title><FaRobot /> Guide d'utilisation</Modal.Title></Modal.Header>
+        <Modal.Header closeButton><Modal.Title>Guide d'utilisation</Modal.Title></Modal.Header>
         <Modal.Body>
           <h5>Comment utiliser Sport-Equip ?</h5>
           <ol>
@@ -129,15 +129,15 @@ const Footer = () => {
             <li>Suivez vos livraisons en temps réel depuis votre profil</li>
             <li>Gagnez des points fidélité à chaque achat</li>
           </ol>
-          <p className="mt-3">Pour toute assistance, utilisez notre chatbot IA disponible sur le site ou contactez notre support client.</p>
+          <p className="mt-3">Pour toute assistance, utilisez notre chatbot disponible sur le site.</p>
         </Modal.Body>
         <Modal.Footer>
-          <Button className="btn-neon" onClick={() => setShowHelp(false)}>Fermer</Button>
+          <Button variant="primary" onClick={() => setShowHelp(false)}>Fermer</Button>
         </Modal.Footer>
       </Modal>
 
       <Modal show={showPrivacy} onHide={() => setShowPrivacy(false)} centered>
-        <Modal.Header closeButton><Modal.Title><FaShieldAlt /> Politique de confidentialité</Modal.Title></Modal.Header>
+        <Modal.Header closeButton><Modal.Title>Politique de confidentialité</Modal.Title></Modal.Header>
         <Modal.Body>
           <h5>Protection de vos données</h5>
           <p>Vos informations personnelles sont utilisées uniquement pour :</p>
@@ -148,10 +148,10 @@ const Footer = () => {
             <li>Fournir une assistance personnalisée</li>
             <li>Améliorer nos services et produits</li>
           </ul>
-          <p className="mt-3">Les données sensibles ne sont jamais partagées avec des tiers. Nous utilisons une authentification sécurisée JWT pour protéger votre compte.</p>
+          <p className="mt-3">Les données sensibles ne sont jamais partagées avec des tiers.</p>
         </Modal.Body>
         <Modal.Footer>
-          <Button className="btn-neon" onClick={() => setShowPrivacy(false)}>Fermer</Button>
+          <Button variant="primary" onClick={() => setShowPrivacy(false)}>Fermer</Button>
         </Modal.Footer>
       </Modal>
 
@@ -172,7 +172,7 @@ const Footer = () => {
           <p className="mt-3">Pour plus d'informations, contactez notre service client.</p>
         </Modal.Body>
         <Modal.Footer>
-          <Button className="btn-neon" onClick={() => setShowTerms(false)}>Fermer</Button>
+          <Button variant="primary" onClick={() => setShowTerms(false)}>Fermer</Button>
         </Modal.Footer>
       </Modal>
     </>

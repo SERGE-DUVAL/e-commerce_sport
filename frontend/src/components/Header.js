@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Navbar, Nav, Container, Badge, Dropdown } from 'react-bootstrap';
-import { FaShoppingCart, FaUser, FaRobot, FaUserShield } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaComments, FaUserShield } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import Chatbot from './Chatbot';
 
 const Header = () => {
   const { user, logout } = useAuth();
-  const { getCartCount, cartAnimation } = useCart();
+  const { getCartCount } = useCart();
   const navigate = useNavigate();
   const [showChatbot, setShowChatbot] = useState(false);
   const roleLabel = user ? (user.role === 'admin' ? 'Admin' : 'Client') : 'Visiteur';
@@ -22,9 +22,9 @@ const Header = () => {
     <>
       <Navbar expand="lg" sticky="top" className="navbar-pro">
         <Container>
-          <Navbar.Brand as={Link} to="/" className="d-flex align-items-center" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+          <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
             <div className="brand-mark">SE</div>
-            <span style={{ background: 'linear-gradient(135deg, #4a90a4, #6c8ebf)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Sport-Equip</span>
+            <span style={{ fontWeight: 700, color: '#0f172a' }}>Sport-Equip</span>
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
@@ -35,21 +35,21 @@ const Header = () => {
                 <Nav.Link as={Link} to="/admin">Admin</Nav.Link>
               )}
             </Nav>
-            <Nav>
+            <Nav className="align-items-center">
               <span className={`role-pill role-${roleLabel.toLowerCase()}`}>
                 <FaUserShield /> {roleLabel}
               </span>
-              <Nav.Link as={Link} to="/panier" className={cartAnimation ? 'cart-animate' : ''}>
+              <Nav.Link as={Link} to="/panier">
                 <FaShoppingCart /> Panier
                 {getCartCount() > 0 && (
-                  <Badge bg="danger" className="ms-1">{getCartCount()}</Badge>
+                  <Badge bg="danger" className="ms-1 cart-badge">{getCartCount()}</Badge>
                 )}
               </Nav.Link>
-              
+
               {user ? (
                 <Dropdown align="end">
-                  <Dropdown.Toggle className="btn-glass">
-                    <FaUser /> {user.nom}
+                  <Dropdown.Toggle variant="outline-secondary" size="sm" className="ms-2">
+                    <FaUser className="me-1" /> {user.nom}
                   </Dropdown.Toggle>
                   <Dropdown.Menu>
                     <Dropdown.Item as={Link} to="/profil">Mon Profil</Dropdown.Item>
@@ -58,21 +58,21 @@ const Header = () => {
                 </Dropdown>
               ) : (
                 <>
-                  <Nav.Link as={Link} to="/connexion" className="nav-cta">Connexion</Nav.Link>
+                  <Nav.Link as={Link} to="/connexion" className="nav-cta ms-2">Connexion</Nav.Link>
                   <Nav.Link as={Link} to="/inscription">Inscription</Nav.Link>
                 </>
               )}
 
               {user && (
-                <Nav.Link onClick={() => setShowChatbot(!showChatbot)}>
-                  <FaRobot /> Assistant
+                <Nav.Link onClick={() => setShowChatbot(!showChatbot)} className="ms-2">
+                  <FaComments /> Assistant
                 </Nav.Link>
               )}
             </Nav>
           </Navbar.Collapse>
         </Container>
       </Navbar>
-      
+
       {user && <Chatbot show={showChatbot} onClose={() => setShowChatbot(false)} />}
     </>
   );
