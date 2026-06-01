@@ -34,7 +34,7 @@ exports.createMouvement = async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
     `).run(id_produit, id_utilisateur, type_mouvement, quantite, stock_avant, stock_apres, motif);
 
-    db.prepare('UPDATE produits SET stock = ?, updated_at = datetime('now') WHERE id_produit = ?').run(stock_apres, id_produit);
+    db.prepare("UPDATE produits SET stock = ?, updated_at = datetime('now') WHERE id_produit = ?").run(stock_apres, id_produit);
 
     res.json({ id_mouvement: mouvement.lastInsertRowid, ...req.body, stock_avant, stock_apres });
   } catch (error) {

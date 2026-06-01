@@ -209,6 +209,13 @@ exports.resetPassword = async (req, res) => {
 exports.googleAuth = async (req, res) => {
   try {
     const { idToken } = req.body;
+    
+    console.log('Google auth request received');
+    console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID || 'your-google-client-id');
+
+    if (!idToken) {
+      return res.status(400).json({ message: 'ID token manquant' });
+    }
 
     // Vérifier le token Google
     const ticket = await googleClient.verifyIdToken({
@@ -218,6 +225,8 @@ exports.googleAuth = async (req, res) => {
 
     const payload = ticket.getPayload();
     const { email, name, sub: googleId } = payload;
+
+    console.log('Google payload:', { email, name, googleId });
 
     // Vérifier si l'utilisateur existe déjà
     let utilisateur = db.prepare('SELECT * FROM utilisateurs WHERE email = ?').get(email);
@@ -271,6 +280,8 @@ exports.googleAuth = async (req, res) => {
     }
   } catch (error) {
     console.error('Erreur googleAuth:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 };

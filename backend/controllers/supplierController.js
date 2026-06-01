@@ -1,9 +1,19 @@
-const Fournisseur = require('../models/Fournisseur');
+const Database = require('better-sqlite3');
+const path = require('path');
+
+const db = new Database(path.join(__dirname, '../../sport-equip.sqlite'));
 
 // Créer un fournisseur
 exports.createFournisseur = async (req, res) => {
   try {
-    const fournisseur = await Fournisseur.create(req.body);
+    const { nom, contact, adresse, email } = req.body;
+    
+    const result = db.prepare(`
+      INSERT INTO fournisseurs (nom, contact, adresse, email, actif, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+    `).run(nom, contact, adresse, email);
+    
+    const fournisseur = db.prepare('SELECT * FROM fournisseurs WHERE id_fournisseur = ?').get(result.lastInsertRowid);
     res.status(201).json(fournisseur);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
@@ -13,9 +23,7 @@ exports.createFournisseur = async (req, res) => {
 // Récupérer tous les fournisseurs
 exports.getAllFournisseurs = async (req, res) => {
   try {
-    const fournisseurs = await Fournisseur.findAll({
-      order: [['createdAt', 'DESC']]
-    });
+    const fournisseurs = db.prepare('SELECT * FROM fournisseurs ORDER BY created_at DESC').all();
     res.json(fournisseurs);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
@@ -25,7 +33,7 @@ exports.getAllFournisseurs = async (req, res) => {
 // Récupérer un fournisseur par ID
 exports.getFournisseurById = async (req, res) => {
   try {
-    const fournisseur = await Fournisseur.findByPk(req.params.id);
+    const fournisseur = db.prepare('SELECT * FROM fournisseurs WHERE id_fournisseur = ?').get(req.params.id);
     if (!fournisseur) {
       return res.status(404).json({ message: 'Fournisseur non trouvé' });
     }
@@ -38,12 +46,20 @@ exports.getFournisseurById = async (req, res) => {
 // Modifier un fournisseur
 exports.updateFournisseur = async (req, res) => {
   try {
-    const fournisseur = await Fournisseur.findByPk(req.params.id);
+    const fournisseur = db.prepare('SELECT * FROM fournisseurs WHERE id_fournisseur = ?').get(req.params.id);
     if (!fournisseur) {
       return res.status(404).json({ message: 'Fournisseur non trouvé' });
     }
-    await fournisseur.update(req.body);
-    res.json(fournisseur);
+    
+    const { nom, contact, adresse, email, actif } = req.body;
+    db.prepare(`
+      UPDATE fournisseurs 
+      SET nom = ?, contact = ?, adresse = ?, email = ?, actif = ?, updated_at = datetime('now')
+      WHERE id_fournisseur = ?
+    `).run(nom, contact, adresse, email, actif, req.params.id);
+    
+    const updatedFournisseur = db.prepare('SELECT * FROM fournisseurs WHERE id_fournisseur = ?').get(req.params.id);
+    res.json(updatedFournisseur);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -52,12 +68,15 @@ exports.updateFournisseur = async (req, res) => {
 // Activer/Désactiver un fournisseur
 exports.toggleFournisseur = async (req, res) => {
   try {
-    const fournisseur = await Fournisseur.findByPk(req.params.id);
+    const fournisseur = db.prepare('SELECT * FROM fournisseurs WHERE id_fournisseur = ?').get(req.params.id);
     if (!fournisseur) {
       return res.status(404).json({ message: 'Fournisseur non trouvé' });
     }
-    await fournisseur.update({ actif: !fournisseur.actif });
-    res.json(fournisseur);
+    
+    db.prepare("UPDATE fournisseurs SET actif = ?, updated_at = datetime('now') WHERE id_fournisseur = ?").run(!fournisseur.actif, req.params.id);
+    
+    const updatedFournisseur = db.prepare('SELECT * FROM fournisseurs WHERE id_fournisseur = ?').get(req.params.id);
+    res.json(updatedFournisseur);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
@@ -66,11 +85,12 @@ exports.toggleFournisseur = async (req, res) => {
 // Supprimer un fournisseur
 exports.deleteFournisseur = async (req, res) => {
   try {
-    const fournisseur = await Fournisseur.findByPk(req.params.id);
+    const fournisseur = db.prepare('SELECT * FROM fournisseurs WHERE id_fournisseur = ?').get(req.params.id);
     if (!fournisseur) {
       return res.status(404).json({ message: 'Fournisseur non trouvé' });
     }
-    await fournisseur.destroy();
+    
+    db.prepare('DELETE FROM fournisseurs WHERE id_fournisseur = ?').run(req.params.id);
     res.json({ message: 'Fournisseur supprimé avec succès' });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });

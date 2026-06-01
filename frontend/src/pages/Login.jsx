@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const googleInitialized = useRef(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -48,16 +49,23 @@ const Login = () => {
   };
 
   useEffect(() => {
+    // Prevent multiple initialization
+    if (googleInitialized.current) {
+      return;
+    }
+
     // Check if Google script is already loaded
     if (window.google && window.google.accounts) {
       window.google.accounts.id.initialize({
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your-google-client-id',
-        callback: handleGoogleLogin
+        callback: handleGoogleLogin,
+        locale: 'fr'
       });
       window.google.accounts.id.renderButton(
         document.getElementById('google-signin-button'),
-        { theme: 'outline', size: 'large' }
+        { theme: 'outline', size: 'large', locale: 'fr' }
       );
+      googleInitialized.current = true;
       return;
     }
 
@@ -69,12 +77,14 @@ const Login = () => {
     script.onload = () => {
       window.google.accounts.id.initialize({
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your-google-client-id',
-        callback: handleGoogleLogin
+        callback: handleGoogleLogin,
+        locale: 'fr'
       });
       window.google.accounts.id.renderButton(
         document.getElementById('google-signin-button'),
-        { theme: 'outline', size: 'large' }
+        { theme: 'outline', size: 'large', locale: 'fr' }
       );
+      googleInitialized.current = true;
     };
     document.body.appendChild(script);
 
