@@ -1,5 +1,6 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const swaggerJsdoc = require('swagger-jsdoc');
@@ -11,15 +12,6 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// Root route
-app.get('/', (req, res) => {
-  res.json({
-    name: 'Sport-Equip API',
-    version: '1.0.0',
-    documentation: '/api-docs'
-  });
-});
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -193,6 +185,15 @@ const db = require('./config/database');
 //   .catch(err => {
 //     console.error('Erreur de synchronisation BDD:', err);
 //   });
+
+// Serve frontend static files
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
