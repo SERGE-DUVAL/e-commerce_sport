@@ -22,6 +22,10 @@ async function migrateLegacyColumns() {
   }
 
   if (sequelize.getDialect() === 'postgres') {
+    await sequelize.query(
+      `ALTER TYPE "enum_commandes_statut" ADD VALUE IF NOT EXISTS 'Remboursement demandé'`
+    );
+
     const [columns] = await sequelize.query(
       `SELECT data_type
        FROM information_schema.columns

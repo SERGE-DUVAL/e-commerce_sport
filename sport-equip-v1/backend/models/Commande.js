@@ -34,7 +34,15 @@ const Commande = sequelize.define('Commande', {
     allowNull: false
   },
   statut: {
-    type: Sequelize.ENUM('En attente', 'Payée', 'En livraison', 'Livrée', 'Annulée', 'Remboursé'),
+    type: Sequelize.ENUM(
+      'En attente',
+      'Payée',
+      'En livraison',
+      'Livrée',
+      'Annulée',
+      'Remboursé',
+      'Remboursement demandé'
+    ),
     defaultValue: 'En attente'
   },
   id_caisse: {
