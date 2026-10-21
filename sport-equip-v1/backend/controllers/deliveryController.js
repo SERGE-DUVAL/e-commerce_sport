@@ -1,6 +1,8 @@
 const { Livreur, AffectationLivraison, Commande, Utilisateur, LigneCommande, Produit } = require('../models');
 const PDFDocument = require('pdfkit');
 
+const activeDeliveryStatuses = ['en attente', 'en cours', 'en_cours'];
+
 // Créer un livreur
 exports.createLivreur = async (req, res) => {
   try {
@@ -19,9 +21,9 @@ exports.getAllLivreurs = async (req, res) => {
     // Synchroniser le statut des livreurs en fonction de leurs affectations actuelles
     for (const livreur of livreurs) {
       const affectationsEnCours = await AffectationLivraison.findAll({
-        where: { 
+        where: {
           id_livreur: livreur.id_livreur,
-          statut: ['en attente', 'en livraison']
+          statut: activeDeliveryStatuses
         }
       });
       
@@ -82,7 +84,10 @@ exports.deleteLivreur = async (req, res) => {
 
     // Vérifier si le livreur a des affectations en cours
     const affectationsEnCours = await AffectationLivraison.findAll({
-      where: { id_livreur: req.params.id, statut: 'en livraison' }
+      where: {
+        id_livreur: req.params.id,
+        statut: activeDeliveryStatuses
+      }
     });
 
     if (affectationsEnCours.length > 0) {
