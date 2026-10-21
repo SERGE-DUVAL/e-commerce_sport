@@ -1,0 +1,30 @@
+[build]
+  base = "sport-equip-v1"
+  command = "npm --prefix backend ci --omit=dev && npm --prefix frontend ci && npm --prefix frontend run build"
+  publish = "frontend/build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  REACT_APP_API_URL = "/api"
+
+[functions]
+  directory = "backend/netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["bcrypt", "express", "pg", "sequelize", "serverless-http"]
+
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/api/health"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
