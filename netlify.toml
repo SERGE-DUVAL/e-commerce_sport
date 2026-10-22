@@ -1,6 +1,6 @@
 [build]
   base = "sport-equip-v1"
-  command = "npm --prefix backend ci --omit=dev && npm --prefix frontend ci && npm --prefix frontend run build"
+  command = "npm --prefix backend ci --omit=dev && npm --prefix frontend install && npm --prefix frontend run build"
   publish = "frontend/build"
 
 [build.environment]
