@@ -1,23 +1,11 @@
 [build]
-  base = "sport-equip-v1"
-  command = "npm --prefix backend ci --omit=dev && npm --prefix frontend install && npm --prefix frontend run build"
-  publish = "frontend/build"
+  base = "sport-equip-v1/frontend"
+  command = "npm install && npm run build"
+  publish = "build"
 
 [build.environment]
   NODE_VERSION = "22"
   REACT_APP_API_URL = "/api"
-  NPM_FLAGS = "--legacy-peer-deps"
-
-[functions]
-  directory = "backend/netlify/functions"
-  node_bundler = "esbuild"
-  external_node_modules = ["bcrypt", "express", "pg", "sequelize", "serverless-http"]
-
-[[redirects]]
-  from = "/health"
-  to = "/.netlify/functions/api/health"
-  status = 200
-  force = true
 
 [[redirects]]
   from = "/api/*"
