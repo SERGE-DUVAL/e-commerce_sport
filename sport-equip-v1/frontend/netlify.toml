@@ -1,5 +1,4 @@
 [build]
-  base = "sport-equip-v1/frontend"
   command = "npm install && npm run build"
   publish = "build"
 
