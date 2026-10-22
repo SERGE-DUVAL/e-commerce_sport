@@ -1,14 +1,10 @@
 [build]
-  base = "sport-equip-v1"
-  command = "cd backend && npm install && cd ../frontend && npm install && npm run build"
-  publish = "frontend/build"
+  base = "sport-equip-v1/frontend"
+  command = "npm install && npm run build"
+  publish = "build"
 
 [build.environment]
   NODE_VERSION = "22"
-
-[functions]
-  directory = "sport-equip-v1/backend/netlify/functions"
-  node_bundler = "esbuild"
 
 [[redirects]]
   from = "/*"

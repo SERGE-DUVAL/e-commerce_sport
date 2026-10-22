@@ -1,6 +1,9 @@
 {
   "scripts": {
-    "build": "npm --prefix sport-equip-v1/frontend run build"
+    "build": "npm --prefix sport-equip-v1/frontend run build",
+    "install:backend": "cd sport-equip-v1/backend && npm install",
+    "install:frontend": "cd sport-equip-v1/frontend && npm install",
+    "build:frontend": "cd sport-equip-v1/frontend && npm run build"
   },
   "dependencies": {
     "@neon/config": "^1.9.3",
