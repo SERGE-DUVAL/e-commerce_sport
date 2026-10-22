@@ -1,12 +1,8 @@
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || (
-  process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000/api'
+  process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api'
 );
-
-if (!API_URL) {
-  throw new Error('REACT_APP_API_URL doit être défini pour compiler le frontend en production.');
-}
 
 const api = axios.create({
   baseURL: API_URL,
